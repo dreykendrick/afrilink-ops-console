@@ -29,12 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAdminUser = useCallback(async (userId: string) => {
     try {
-      const baseQuery = supabase.from('admin_users').select('*').eq('user_id', userId);
-
       const shouldFilterActive = adminUsersHasIsActiveRef.current !== false;
-      const primaryQuery = shouldFilterActive ? baseQuery.eq('is_active', true) : baseQuery;
+      
+      // Build query - use limit(1) to handle duplicate entries gracefully
+      let query = supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', userId)
+        .limit(1);
 
-      const { data, error } = await primaryQuery.maybeSingle();
+      if (shouldFilterActive) {
+        query = query.eq('is_active', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         // If the backend doesn't have `is_active`, retry once without it.
@@ -44,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .from('admin_users')
             .select('*')
             .eq('user_id', userId)
-            .maybeSingle();
+            .limit(1);
 
           if (fallbackError) {
             console.error('Error fetching admin user (fallback):', fallbackError);
@@ -52,7 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          setAdminUser((fallbackData as AdminUser) ?? null);
+          const adminRecord = fallbackData?.[0] ?? null;
+          setAdminUser(adminRecord as AdminUser | null);
           return;
         }
 
@@ -66,7 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         adminUsersHasIsActiveRef.current = true;
       }
 
-      setAdminUser((data as AdminUser) ?? null);
+      const adminRecord = data?.[0] ?? null;
+      setAdminUser(adminRecord as AdminUser | null);
     } catch (err) {
       console.error('Error in fetchAdminUser:', err);
       setAdminUser(null);
