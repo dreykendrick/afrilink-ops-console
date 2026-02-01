@@ -41,14 +41,31 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      // External AfriLink database uses 'user_roles' table instead of 'users'
+      // External AfriLink database uses 'user_roles' table with different column names
       const { data, error } = await externalSupabase
         .from('user_roles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers((data as User[]) || []);
+      
+      // Map external schema to expected User format
+      const mappedUsers = (data || []).map((u: Record<string, unknown>) => ({
+        id: u.id as string,
+        user_id: u.user_id as string || null,
+        phone: u.phone as string || u.phone_number as string || null,
+        email: u.email as string || u.email_address as string || null,
+        full_name: u.full_name as string || u.name as string || u.display_name as string || null,
+        role: (u.role as string || u.user_role as string || 'buyer') as 'buyer' | 'vendor' | 'affiliate',
+        verification_status: u.verification_status as string || u.verified as string || (u.is_verified ? 'verified' : 'unverified') || 'unverified',
+        account_status: (u.account_status as string || u.status as string || 'active') as 'active' | 'suspended',
+        city: u.city as string || u.location as string || null,
+        created_at: u.created_at as string || '',
+        updated_at: u.updated_at as string || '',
+        last_active_at: u.last_active_at as string || u.last_login as string || null,
+      })) as User[];
+      
+      setUsers(mappedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');

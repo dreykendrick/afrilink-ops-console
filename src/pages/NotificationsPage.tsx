@@ -20,13 +20,29 @@ export default function NotificationsPage() {
 
   const fetchLogs = async () => {
     setIsLoading(true);
-    const { data, error } = await externalSupabase.from('notifications_log').select('*').order('created_at', { ascending: false }).limit(200);
-    if (error) { toast.error('Failed to load notifications'); } else { setLogs((data as NotificationLog[]) || []); }
+    // External AfriLink database uses 'notifications' table
+    const { data, error } = await externalSupabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error) { 
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications'); 
+    } else { 
+      // Map external schema to expected format
+      const mapped = (data || []).map((n: Record<string, unknown>) => ({
+        id: n.id as string,
+        type: n.type as string || n.notification_type as string || 'unknown',
+        masked_recipient: n.masked_recipient as string || n.recipient as string || '---',
+        status: n.status as string || 'unknown',
+        provider: n.provider as string || null,
+        created_at: n.created_at as string,
+        retry_count: n.retry_count as number || 0,
+      }));
+      setLogs(mapped); 
+    }
     setIsLoading(false);
   };
 
   const handleRetry = async (id: string) => {
-    await externalSupabase.from('notifications_log').update({ status: 'pending', retry_count: 1 }).eq('id', id);
+    await externalSupabase.from('notifications').update({ status: 'pending', retry_count: 1 }).eq('id', id);
     toast.success('Notification queued for retry');
     fetchLogs();
   };

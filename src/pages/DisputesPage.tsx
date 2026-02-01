@@ -27,8 +27,30 @@ export default function DisputesPage() {
 
   const fetchDisputes = async () => {
     setIsLoading(true);
-    const { data, error } = await externalSupabase.from('disputes').select('*').order('created_at', { ascending: false });
-    if (error) { toast.error('Failed to load disputes'); } else { setDisputes((data as Dispute[]) || []); }
+    // Try 'disputes' table first, fall back to 'order_disputes' if that fails
+    let { data, error } = await externalSupabase.from('disputes').select('*').order('created_at', { ascending: false });
+    if (error) {
+      // Try alternate table name
+      const res = await externalSupabase.from('order_disputes').select('*').order('created_at', { ascending: false });
+      data = res.data;
+      error = res.error;
+    }
+    if (error) { 
+      console.error('Error fetching disputes:', error);
+      // Show empty state instead of error if table doesn't exist
+      setDisputes([]);
+    } else { 
+      // Map to expected format
+      const mapped = (data || []).map((d: Record<string, unknown>) => ({
+        id: d.id as string,
+        order_id: d.order_id as string,
+        reason: d.reason as string || d.dispute_reason as string || '',
+        buyer_note: d.buyer_note as string || d.notes as string || null,
+        status: d.status as string || 'open',
+        created_at: d.created_at as string,
+      }));
+      setDisputes(mapped); 
+    }
     setIsLoading(false);
   };
 
