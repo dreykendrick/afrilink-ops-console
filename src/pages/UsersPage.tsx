@@ -41,8 +41,9 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      // External AfriLink database uses 'user_roles' table instead of 'users'
       const { data, error } = await externalSupabase
-        .from('users')
+        .from('user_roles')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -94,7 +95,7 @@ export default function UsersPage() {
       }
 
       const { error } = await externalSupabase
-        .from('users')
+        .from('user_roles')
         .update(updateData)
         .eq('id', selectedUser.id);
 
