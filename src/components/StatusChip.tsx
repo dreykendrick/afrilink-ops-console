@@ -14,6 +14,8 @@ const statusConfig: Record<string, { label: string; variant: string }> = {
   // Product status
   approved: { label: 'Approved', variant: 'approved' },
   rejected: { label: 'Rejected', variant: 'rejected' },
+  pending_takedown: { label: 'Pending Takedown', variant: 'open' },
+  taken_down: { label: 'Taken Down', variant: 'suspended' },
   
   // Order status
   pending_payment: { label: 'Pending Payment', variant: 'pending' },

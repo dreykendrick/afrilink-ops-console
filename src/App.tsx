@@ -12,6 +12,7 @@ import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
 import VendorsPage from "./pages/VendorsPage";
 import ProductsPage from "./pages/ProductsPage";
+import TakedownRequestsPage from "./pages/TakedownRequestsPage";
 import OrdersPage from "./pages/OrdersPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
 import DeliveryPage from "./pages/DeliveryPage";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/users" element={<ProtectedRoute><AdminLayout><UsersPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/vendors" element={<ProtectedRoute><AdminLayout><VendorsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><AdminLayout><ProductsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/takedowns" element={<ProtectedRoute><AdminLayout><TakedownRequestsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><AdminLayout><OrderDetailPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/delivery" element={<ProtectedRoute><AdminLayout><DeliveryPage /></AdminLayout></ProtectedRoute>} />
