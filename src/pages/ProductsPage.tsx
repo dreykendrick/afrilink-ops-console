@@ -51,13 +51,38 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await externalSupabase
+      
+      // Fetch products first
+      const { data: productsData, error: productsError } = await externalSupabase
         .from('products')
-        .select('*, vendors(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProducts((data as ProductWithVendor[]) || []);
+      if (productsError) throw productsError;
+
+      // Fetch vendors separately and map them
+      const vendorIds = [...new Set((productsData || []).map(p => p.vendor_id).filter(Boolean))];
+      let vendorsMap: Record<string, Vendor> = {};
+      
+      if (vendorIds.length > 0) {
+        const { data: vendorsData } = await externalSupabase
+          .from('vendors')
+          .select('*')
+          .in('id', vendorIds);
+        
+        vendorsMap = (vendorsData || []).reduce((acc, v) => {
+          acc[v.id] = v as Vendor;
+          return acc;
+        }, {} as Record<string, Vendor>);
+      }
+
+      // Combine products with vendors
+      const productsWithVendors = (productsData || []).map(p => ({
+        ...p,
+        vendors: vendorsMap[p.vendor_id] || null,
+      })) as ProductWithVendor[];
+
+      setProducts(productsWithVendors);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to load products');
