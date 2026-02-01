@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { externalSupabase, EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY } from '@/integrations/external-supabase/client';
-import { useExternalAuth } from '@/contexts/ExternalAuthContext';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
@@ -24,7 +23,6 @@ interface ProductWithVendor extends Product {
 }
 
 export default function TakedownRequestsPage() {
-  const { session: externalSession } = useExternalAuth();
   const { createAuditLog } = useAuditLog();
   
   const [products, setProducts] = useState<ProductWithVendor[]>([]);
@@ -120,34 +118,24 @@ export default function TakedownRequestsPage() {
     
     setIsActionLoading(true);
     try {
-      const action = actionType === 'approve' ? 'approve_takedown' : 'reject_takedown';
+      const beforeData = { status: selectedProduct.status };
+      const newStatus = actionType === 'approve' ? 'taken_down' : 'approved';
       
-      // Call the external admin-actions edge function
-      const response = await fetch(`${EXTERNAL_SUPABASE_URL}/functions/v1/admin-actions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${externalSession?.access_token || EXTERNAL_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          action,
-          product_id: selectedProduct.id,
-          reason: reason || undefined,
-        }),
-      });
+      // Directly update the product status in the external database
+      const { error } = await externalSupabase
+        .from('products')
+        .update({ status: newStatus })
+        .eq('id', selectedProduct.id);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to ${actionType} takedown`);
-      }
+      if (error) throw error;
 
       // Log to local audit system as well
       await createAuditLog({
         actionType: actionType === 'approve' ? 'TAKEDOWN_APPROVED' : 'TAKEDOWN_REJECTED',
         entityType: 'product',
         entityId: selectedProduct.id,
-        beforeData: { status: 'pending_takedown' },
-        afterData: { status: actionType === 'approve' ? 'taken_down' : 'approved' },
+        beforeData,
+        afterData: { status: newStatus },
         reason,
       });
 
