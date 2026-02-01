@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { AdminUser, AppRole } from '@/lib/types';
@@ -23,22 +23,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Some environments may not have the `admin_users.is_active` column yet.
+  // Cache that fact so we don't spam failing requests.
+  const adminUsersHasIsActiveRef = useRef<boolean | null>(null);
+
   const fetchAdminUser = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single();
+      const baseQuery = supabase.from('admin_users').select('*').eq('user_id', userId);
+
+      const shouldFilterActive = adminUsersHasIsActiveRef.current !== false;
+      const primaryQuery = shouldFilterActive ? baseQuery.eq('is_active', true) : baseQuery;
+
+      const { data, error } = await primaryQuery.maybeSingle();
 
       if (error) {
+        // If the backend doesn't have `is_active`, retry once without it.
+        if ((error as any)?.code === '42703' && shouldFilterActive) {
+          adminUsersHasIsActiveRef.current = false;
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (fallbackError) {
+            console.error('Error fetching admin user (fallback):', fallbackError);
+            setAdminUser(null);
+            return;
+          }
+
+          setAdminUser((fallbackData as AdminUser) ?? null);
+          return;
+        }
+
         console.error('Error fetching admin user:', error);
         setAdminUser(null);
         return;
       }
 
-      setAdminUser(data as AdminUser);
+      // Cache that `is_active` exists if we successfully queried using it.
+      if (adminUsersHasIsActiveRef.current === null && shouldFilterActive) {
+        adminUsersHasIsActiveRef.current = true;
+      }
+
+      setAdminUser((data as AdminUser) ?? null);
     } catch (err) {
       console.error('Error in fetchAdminUser:', err);
       setAdminUser(null);
