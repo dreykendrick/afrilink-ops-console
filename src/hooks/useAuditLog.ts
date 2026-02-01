@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { externalSupabase } from '@/integrations/external-supabase/client';
+import { useExternalAuth } from '@/contexts/ExternalAuthContext';
 import type { Json } from '@/integrations/supabase/types';
 
 interface AuditLogParams {
@@ -13,7 +13,7 @@ interface AuditLogParams {
 }
 
 export function useAuditLog() {
-  const { adminUser } = useAuth();
+  const { adminUser } = useExternalAuth();
 
   const createAuditLog = useCallback(async ({
     actionType,
@@ -29,7 +29,7 @@ export function useAuditLog() {
     }
 
     try {
-      const { error } = await supabase.from('audit_logs').insert({
+      const { error } = await externalSupabase.from('audit_logs').insert({
         admin_user_id: adminUser.id,
         action_type: actionType,
         entity_type: entityType,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
@@ -45,7 +45,7 @@ export default function VendorsPage() {
   const fetchVendors = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await externalSupabase
         .from('vendors')
         .select('*')
         .order('created_at', { ascending: false });
@@ -108,7 +108,7 @@ export default function VendorsPage() {
           break;
       }
 
-      const { error } = await supabase
+      const { error } = await externalSupabase
         .from('vendors')
         .update(updateData)
         .eq('id', selectedVendor.id);

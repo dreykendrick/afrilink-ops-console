@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
@@ -41,7 +41,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await externalSupabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
@@ -93,7 +93,7 @@ export default function UsersPage() {
           break;
       }
 
-      const { error } = await supabase
+      const { error } = await externalSupabase
         .from('users')
         .update(updateData)
         .eq('id', selectedUser.id);

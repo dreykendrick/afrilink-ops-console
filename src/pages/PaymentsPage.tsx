@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
 import { TableSkeleton } from '@/components/LoadingState';
@@ -20,7 +20,7 @@ export default function PaymentsPage() {
 
   const fetchPayouts = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('payouts').select('*').order('created_at', { ascending: false });
+    const { data, error } = await externalSupabase.from('payouts').select('*').order('created_at', { ascending: false });
     if (error) { toast.error('Failed to load payouts'); } else { setPayouts((data as Payout[]) || []); }
     setIsLoading(false);
   };

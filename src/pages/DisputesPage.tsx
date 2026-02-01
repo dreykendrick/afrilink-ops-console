@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
@@ -27,7 +27,7 @@ export default function DisputesPage() {
 
   const fetchDisputes = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('disputes').select('*').order('created_at', { ascending: false });
+    const { data, error } = await externalSupabase.from('disputes').select('*').order('created_at', { ascending: false });
     if (error) { toast.error('Failed to load disputes'); } else { setDisputes((data as Dispute[]) || []); }
     setIsLoading(false);
   };
@@ -35,7 +35,7 @@ export default function DisputesPage() {
   const handleResolve = async (note?: string) => {
     if (!selectedDispute || !adminUser) return;
     setIsActionLoading(true);
-    const { error } = await supabase.from('disputes').update({ status: 'resolved', resolution_note: note, resolved_by: adminUser.id, resolved_at: new Date().toISOString() }).eq('id', selectedDispute.id);
+    const { error } = await externalSupabase.from('disputes').update({ status: 'resolved', resolution_note: note, resolved_by: adminUser.id, resolved_at: new Date().toISOString() }).eq('id', selectedDispute.id);
     if (error) { toast.error('Failed to resolve dispute'); } else {
       await createAuditLog({ actionType: 'DISPUTE_RESOLVED', entityType: 'dispute', entityId: selectedDispute.id, beforeData: { status: 'open' }, afterData: { status: 'resolved' }, reason: note });
       toast.success('Dispute resolved');

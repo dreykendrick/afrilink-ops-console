@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
@@ -47,14 +47,28 @@ export default function OrderDetailPage() {
   const fetchOrder = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch order first
+      const { data: orderData, error: orderError } = await externalSupabase
         .from('orders')
-        .select('*, vendors(*)')
+        .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
-      setOrder(data as OrderDetail);
+      if (orderError) throw orderError;
+
+      // Fetch vendor separately if order has vendor_id
+      let vendor = null;
+      if (orderData.vendor_id) {
+        const { data: vendorData } = await externalSupabase
+          .from('vendors')
+          .select('*')
+          .eq('id', orderData.vendor_id)
+          .single();
+        vendor = vendorData;
+      }
+
+      setOrder({ ...orderData, vendors: vendor } as OrderDetail);
     } catch (error) {
       console.error('Error fetching order:', error);
       toast.error('Failed to load order');
@@ -100,7 +114,7 @@ export default function OrderDetailPage() {
           break;
       }
 
-      const { error } = await supabase
+      const { error } = await externalSupabase
         .from('orders')
         .update(updateData)
         .eq('id', order.id);
