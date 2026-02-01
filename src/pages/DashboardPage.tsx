@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { MetricCard } from '@/components/MetricCard';
 import { LoadingState } from '@/components/LoadingState';
 import { formatCurrency } from '@/lib/utils';
@@ -52,27 +52,27 @@ export default function DashboardPage() {
         pendingDisputes,
         pendingPayouts,
       ] = await Promise.all([
-        supabase
+        externalSupabase
           .from('orders')
           .select('id, total_amount')
           .gte('created_at', todayISO),
-        supabase
+        externalSupabase
           .from('orders')
           .select('id, total_amount')
           .gte('created_at', weekAgoISO),
-        supabase
+        externalSupabase
           .from('products')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'pending'),
-        supabase
+        externalSupabase
           .from('notifications_log')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'failed'),
-        supabase
+        externalSupabase
           .from('disputes')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'open'),
-        supabase
+        externalSupabase
           .from('payouts')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'pending'),
