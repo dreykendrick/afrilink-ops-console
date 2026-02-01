@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { EmptyState } from '@/components/EmptyState';
 import { TableSkeleton } from '@/components/LoadingState';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,8 @@ export default function DeliveryPage() {
   const fetchData = async () => {
     setIsLoading(true);
     const [zonesRes, crossRes] = await Promise.all([
-      supabase.from('same_city_zones').select('*').order('city'),
-      supabase.from('cross_city_fees').select('*').order('from_city'),
+      externalSupabase.from('same_city_zones').select('*').order('city'),
+      externalSupabase.from('cross_city_fees').select('*').order('from_city'),
     ]);
     setZones((zonesRes.data as SameCityZone[]) || []);
     setCrossFees((crossRes.data as CrossCityFee[]) || []);
@@ -40,9 +40,9 @@ export default function DeliveryPage() {
   const handleSaveZone = async () => {
     const data = { city: zoneForm.city, zone_name: zoneForm.zone_name, fee: parseFloat(zoneForm.fee) || 0 };
     if (editingZone) {
-      await supabase.from('same_city_zones').update(data).eq('id', editingZone.id);
+      await externalSupabase.from('same_city_zones').update(data).eq('id', editingZone.id);
     } else {
-      await supabase.from('same_city_zones').insert(data);
+      await externalSupabase.from('same_city_zones').insert(data);
     }
     toast.success('Zone saved');
     setShowZoneDialog(false);
@@ -54,9 +54,9 @@ export default function DeliveryPage() {
   const handleSaveCross = async () => {
     const data = { from_city: crossForm.from_city, to_city: crossForm.to_city, fee: parseFloat(crossForm.fee) || 0 };
     if (editingCross) {
-      await supabase.from('cross_city_fees').update(data).eq('id', editingCross.id);
+      await externalSupabase.from('cross_city_fees').update(data).eq('id', editingCross.id);
     } else {
-      await supabase.from('cross_city_fees').insert(data);
+      await externalSupabase.from('cross_city_fees').insert(data);
     }
     toast.success('Cross-city fee saved');
     setShowCrossDialog(false);

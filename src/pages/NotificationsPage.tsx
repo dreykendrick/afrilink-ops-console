@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
 import { TableSkeleton } from '@/components/LoadingState';
@@ -20,13 +20,13 @@ export default function NotificationsPage() {
 
   const fetchLogs = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('notifications_log').select('*').order('created_at', { ascending: false }).limit(200);
+    const { data, error } = await externalSupabase.from('notifications_log').select('*').order('created_at', { ascending: false }).limit(200);
     if (error) { toast.error('Failed to load notifications'); } else { setLogs((data as NotificationLog[]) || []); }
     setIsLoading(false);
   };
 
   const handleRetry = async (id: string) => {
-    await supabase.from('notifications_log').update({ status: 'pending', retry_count: 1 }).eq('id', id);
+    await externalSupabase.from('notifications_log').update({ status: 'pending', retry_count: 1 }).eq('id', id);
     toast.success('Notification queued for retry');
     fetchLogs();
   };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
@@ -68,13 +68,38 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch orders first
+      const { data: ordersData, error: ordersError } = await externalSupabase
         .from('orders')
-        .select('*, vendors(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setOrders((data as OrderWithVendor[]) || []);
+      if (ordersError) throw ordersError;
+
+      // Fetch vendors separately and map them
+      const vendorIds = [...new Set((ordersData || []).map(o => o.vendor_id).filter(Boolean))];
+      let vendorsMap: Record<string, Vendor> = {};
+      
+      if (vendorIds.length > 0) {
+        const { data: vendorsData } = await externalSupabase
+          .from('vendors')
+          .select('*')
+          .in('id', vendorIds);
+        
+        vendorsMap = (vendorsData || []).reduce((acc, v) => {
+          acc[v.id] = v as Vendor;
+          return acc;
+        }, {} as Record<string, Vendor>);
+      }
+
+      // Combine orders with vendors
+      const ordersWithVendors = (ordersData || []).map(o => ({
+        ...o,
+        vendors: vendorsMap[o.vendor_id] || null,
+      })) as OrderWithVendor[];
+
+      setOrders(ordersWithVendors);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
@@ -132,7 +157,7 @@ export default function OrdersPage() {
           break;
       }
 
-      const { error } = await supabase
+      const { error } = await externalSupabase
         .from('orders')
         .update(updateData)
         .eq('id', selectedOrder.id);
