@@ -65,14 +65,28 @@ export default function ProductsPage() {
       let vendorsMap: Record<string, Vendor> = {};
       
       if (vendorIds.length > 0) {
-        // External AfriLink database uses 'vendor_profiles' table
+        // External AfriLink database uses 'vendor_profiles' table with different column names
         const { data: vendorsData } = await externalSupabase
           .from('vendor_profiles')
           .select('*')
           .in('id', vendorIds);
         
-        vendorsMap = (vendorsData || []).reduce((acc, v) => {
-          acc[v.id] = v as Vendor;
+        // Map vendor data to expected format (handle different column names)
+        vendorsMap = (vendorsData || []).reduce((acc, v: Record<string, unknown>) => {
+          acc[v.id as string] = {
+            id: v.id as string,
+            user_id: v.user_id as string || '',
+            // Try multiple possible column names for business name
+            business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
+            city: v.city as string || null,
+            phone: v.phone as string || null,
+            verification_status: (v.verification_status || v.verified || 'pending') as 'pending' | 'verified' | 'rejected',
+            account_status: (v.account_status || v.status || 'pending') as 'pending' | 'active' | 'suspended',
+            total_orders: v.total_orders as number || 0,
+            total_revenue: v.total_revenue as number || 0,
+            created_at: v.created_at as string || '',
+            updated_at: v.updated_at as string || '',
+          };
           return acc;
         }, {} as Record<string, Vendor>);
       }

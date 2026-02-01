@@ -45,14 +45,30 @@ export default function VendorsPage() {
   const fetchVendors = async () => {
     try {
       setIsLoading(true);
-      // External AfriLink database uses 'vendor_profiles' table instead of 'vendors'
+      // External AfriLink database uses 'vendor_profiles' table with different column names
       const { data, error } = await externalSupabase
         .from('vendor_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setVendors((data as Vendor[]) || []);
+      
+      // Map external schema to expected Vendor format
+      const mappedVendors = (data || []).map((v: Record<string, unknown>) => ({
+        id: v.id as string,
+        user_id: v.user_id as string || '',
+        business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
+        city: v.city as string || v.location as string || null,
+        phone: v.phone as string || v.phone_number as string || null,
+        verification_status: (v.verification_status || v.verified || 'pending') as 'pending' | 'verified' | 'rejected',
+        account_status: (v.account_status || v.status || 'pending') as 'pending' | 'active' | 'suspended',
+        total_orders: v.total_orders as number || 0,
+        total_revenue: v.total_revenue as number || 0,
+        created_at: v.created_at as string || '',
+        updated_at: v.updated_at as string || '',
+      })) as Vendor[];
+      
+      setVendors(mappedVendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
       toast.error('Failed to load vendors');

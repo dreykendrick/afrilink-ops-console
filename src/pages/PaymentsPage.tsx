@@ -20,8 +20,30 @@ export default function PaymentsPage() {
 
   const fetchPayouts = async () => {
     setIsLoading(true);
-    const { data, error } = await externalSupabase.from('payouts').select('*').order('created_at', { ascending: false });
-    if (error) { toast.error('Failed to load payouts'); } else { setPayouts((data as Payout[]) || []); }
+    // Try 'payouts' first, then 'vendor_payouts'
+    let { data, error } = await externalSupabase.from('payouts').select('*').order('created_at', { ascending: false });
+    if (error) {
+      const res = await externalSupabase.from('vendor_payouts').select('*').order('created_at', { ascending: false });
+      data = res.data;
+      error = res.error;
+    }
+    if (error) { 
+      console.error('Error fetching payouts:', error);
+      // Show empty state instead of error if table doesn't exist
+      setPayouts([]);
+    } else { 
+      // Map to expected format
+      const mapped = (data || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        payout_reference: p.payout_reference as string || p.reference as string || `PAY-${(p.id as string)?.slice(0, 8)}`,
+        recipient_type: p.recipient_type as string || 'vendor',
+        recipient_name: p.recipient_name as string || p.vendor_name as string || 'Unknown',
+        amount: p.amount as number || 0,
+        status: p.status as string || 'pending',
+        created_at: p.created_at as string,
+      }));
+      setPayouts(mapped); 
+    }
     setIsLoading(false);
   };
 

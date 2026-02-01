@@ -64,14 +64,17 @@ export default function DashboardPage() {
           .from('products')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'pending'),
+        // External DB uses 'notifications' instead of 'notifications_log'
         externalSupabase
-          .from('notifications_log')
+          .from('notifications')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'failed'),
+        // Disputes might not exist - handle gracefully
         externalSupabase
           .from('disputes')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'open'),
+        // Payouts might not exist - handle gracefully
         externalSupabase
           .from('payouts')
           .select('id', { count: 'exact', head: true })
