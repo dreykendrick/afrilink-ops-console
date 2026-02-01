@@ -41,29 +41,69 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      // External AfriLink database uses 'user_roles' table with different column names
-      const { data, error } = await externalSupabase
+      
+      // Fetch user_roles which contains role assignments
+      const { data: rolesData, error: rolesError } = await externalSupabase
         .from('user_roles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
+
+      // Get unique user_ids to fetch profile data
+      const userIds = [...new Set((rolesData || []).map(r => r.user_id).filter(Boolean))];
       
-      // Map external schema to expected User format
-      const mappedUsers = (data || []).map((u: Record<string, unknown>) => ({
-        id: u.id as string,
-        user_id: u.user_id as string || null,
-        phone: u.phone as string || u.phone_number as string || null,
-        email: u.email as string || u.email_address as string || null,
-        full_name: u.full_name as string || u.name as string || u.display_name as string || null,
-        role: (u.role as string || u.user_role as string || 'buyer') as 'buyer' | 'vendor' | 'affiliate',
-        verification_status: u.verification_status as string || u.verified as string || (u.is_verified ? 'verified' : 'unverified') || 'unverified',
-        account_status: (u.account_status as string || u.status as string || 'active') as 'active' | 'suspended',
-        city: u.city as string || u.location as string || null,
-        created_at: u.created_at as string || '',
-        updated_at: u.updated_at as string || '',
-        last_active_at: u.last_active_at as string || u.last_login as string || null,
-      })) as User[];
+      // Try to fetch user profile data from profiles table
+      let profilesMap: Record<string, Record<string, unknown>> = {};
+      if (userIds.length > 0) {
+        // Try 'profiles' table first (common pattern)
+        const { data: profilesData } = await externalSupabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        if (profilesData && profilesData.length > 0) {
+          profilesMap = (profilesData || []).reduce((acc, p: Record<string, unknown>) => {
+            acc[p.id as string] = p;
+            return acc;
+          }, {} as Record<string, Record<string, unknown>>);
+        } else {
+          // Fallback: try user_id column instead of id
+          const { data: profilesDataAlt } = await externalSupabase
+            .from('profiles')
+            .select('*')
+            .in('user_id', userIds);
+          
+          if (profilesDataAlt) {
+            profilesMap = (profilesDataAlt || []).reduce((acc, p: Record<string, unknown>) => {
+              acc[p.user_id as string] = p;
+              return acc;
+            }, {} as Record<string, Record<string, unknown>>);
+          }
+        }
+      }
+      
+      // Map combined data to expected User format
+      const mappedUsers = (rolesData || []).map((u: Record<string, unknown>) => {
+        const userId = u.user_id as string;
+        const profile = profilesMap[userId] || {};
+        
+        return {
+          id: u.id as string,
+          user_id: userId,
+          // Get user details from profile, fallback to role record
+          phone: (profile.phone || profile.phone_number || u.phone || u.phone_number || null) as string | null,
+          email: (profile.email || profile.email_address || u.email || u.email_address || null) as string | null,
+          full_name: (profile.full_name || profile.name || profile.display_name || u.full_name || u.name || null) as string | null,
+          role: (u.role || u.user_role || 'buyer') as 'buyer' | 'vendor' | 'affiliate',
+          verification_status: (profile.verification_status || u.verification_status || (profile.is_verified ? 'verified' : 'unverified') || 'unverified') as string,
+          account_status: (profile.account_status || profile.status || u.account_status || 'active') as 'active' | 'suspended',
+          city: (profile.city || profile.location || u.city || null) as string | null,
+          created_at: u.created_at as string || '',
+          updated_at: (profile.updated_at || u.updated_at || '') as string,
+          last_active_at: (profile.last_active_at || profile.last_login || u.last_active_at || null) as string | null,
+        };
+      }) as User[];
       
       setUsers(mappedUsers);
     } catch (error) {

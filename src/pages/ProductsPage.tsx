@@ -60,23 +60,23 @@ export default function ProductsPage() {
 
       if (productsError) throw productsError;
 
-      // Fetch vendors separately and map them
-      const vendorIds = [...new Set((productsData || []).map(p => p.vendor_id).filter(Boolean))];
+      // External products use vendor_id which is actually the user_id in vendor_profiles
+      const vendorUserIds = [...new Set((productsData || []).map(p => p.vendor_id).filter(Boolean))];
       let vendorsMap: Record<string, Vendor> = {};
       
-      if (vendorIds.length > 0) {
-        // External AfriLink database uses 'vendor_profiles' table with different column names
+      if (vendorUserIds.length > 0) {
+        // Query vendor_profiles by user_id (not id) since products.vendor_id = vendor_profiles.user_id
         const { data: vendorsData } = await externalSupabase
           .from('vendor_profiles')
           .select('*')
-          .in('id', vendorIds);
+          .in('user_id', vendorUserIds);
         
-        // Map vendor data to expected format (handle different column names)
+        // Map vendor data by user_id (since that's what products.vendor_id references)
         vendorsMap = (vendorsData || []).reduce((acc, v: Record<string, unknown>) => {
-          acc[v.id as string] = {
+          const userId = v.user_id as string;
+          acc[userId] = {
             id: v.id as string,
-            user_id: v.user_id as string || '',
-            // Try multiple possible column names for business name
+            user_id: userId,
             business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
             city: v.city as string || null,
             phone: v.phone as string || null,
@@ -91,10 +91,23 @@ export default function ProductsPage() {
         }, {} as Record<string, Vendor>);
       }
 
-      // Combine products with vendors
-      const productsWithVendors = (productsData || []).map(p => ({
-        ...p,
-        vendors: vendorsMap[p.vendor_id] || null,
+      // Map external product schema to expected format
+      const productsWithVendors = (productsData || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        vendor_id: p.vendor_id as string,
+        // External uses 'title' instead of 'name'
+        name: (p.title || p.name || 'Untitled Product') as string,
+        description: p.description as string | null,
+        price: p.price as number,
+        // External uses 'image_url' and 'image_urls' instead of 'images'
+        images: (p.image_urls || (p.image_url ? [p.image_url] : null) || p.images) as string[] | null,
+        // External uses 'commission' instead of 'commission_percent'
+        commission_percent: (p.commission ?? p.commission_percent ?? 10) as number,
+        status: (p.status || 'pending') as 'pending' | 'approved' | 'rejected',
+        rejection_reason: p.rejection_reason as string | null,
+        created_at: p.created_at as string,
+        updated_at: p.updated_at as string,
+        vendors: vendorsMap[p.vendor_id as string] || null,
       })) as ProductWithVendor[];
 
       setProducts(productsWithVendors);
