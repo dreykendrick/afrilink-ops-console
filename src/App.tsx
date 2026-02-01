@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ExternalAuthProvider } from "@/contexts/ExternalAuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminLayout } from "@/components/AdminLayout";
 import AuthPage from "./pages/AuthPage";
@@ -29,21 +30,23 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/" element={<ProtectedRoute><AdminLayout><DashboardPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><AdminLayout><UsersPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/vendors" element={<ProtectedRoute><AdminLayout><VendorsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/products" element={<ProtectedRoute><AdminLayout><ProductsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/orders/:id" element={<ProtectedRoute><AdminLayout><OrderDetailPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/delivery" element={<ProtectedRoute><AdminLayout><DeliveryPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/payments" element={<ProtectedRoute><AdminLayout><PaymentsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><AdminLayout><NotificationsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/disputes" element={<ProtectedRoute><AdminLayout><DisputesPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute requiredRole="SUPER_ADMIN"><AdminLayout><SettingsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ExternalAuthProvider>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/" element={<ProtectedRoute><AdminLayout><DashboardPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/users" element={<ProtectedRoute><AdminLayout><UsersPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/vendors" element={<ProtectedRoute><AdminLayout><VendorsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute><AdminLayout><ProductsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/orders/:id" element={<ProtectedRoute><AdminLayout><OrderDetailPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/delivery" element={<ProtectedRoute><AdminLayout><DeliveryPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute><AdminLayout><PaymentsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><AdminLayout><NotificationsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/disputes" element={<ProtectedRoute><AdminLayout><DisputesPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute requiredRole="SUPER_ADMIN"><AdminLayout><SettingsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ExternalAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

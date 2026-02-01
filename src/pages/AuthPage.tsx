@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useExternalAuth } from '@/contexts/ExternalAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, isLoading: authLoading } = useAuth();
+  const { signIn: externalSignIn } = useExternalAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,18 +40,29 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      // Sign in to both backends in parallel
+      const [localResult, externalResult] = await Promise.all([
+        signIn(email, password),
+        externalSignIn(email, password),
+      ]);
       
-      if (signInError) {
-        if (signInError.message.includes('Invalid login credentials')) {
+      // Check for errors from the local (Lovable Cloud) auth
+      if (localResult.error) {
+        if (localResult.error.message.includes('Invalid login credentials')) {
           setError('Invalid email or password. Please try again.');
-        } else if (signInError.message.includes('Email not confirmed')) {
+        } else if (localResult.error.message.includes('Email not confirmed')) {
           setError('Please verify your email address before logging in.');
         } else {
           setError('Unable to sign in. Please try again later.');
         }
-        console.error('Sign in error:', signInError);
+        console.error('Sign in error:', localResult.error);
         return;
+      }
+
+      // Log external auth result (non-blocking - local auth is primary for access)
+      if (externalResult.error) {
+        console.warn('[ExternalAuth] Sign in failed:', externalResult.error);
+        // Don't block login - external auth is for data access, not panel access
       }
 
       navigate(from, { replace: true });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { externalSupabase } from '@/integrations/external-supabase/client';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
@@ -51,7 +51,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await externalSupabase
         .from('products')
         .select('*, vendors(*)')
         .order('created_at', { ascending: false });
@@ -89,7 +89,7 @@ export default function ProductsPage() {
         rejection_reason: actionType === 'reject' ? reason : null,
       };
 
-      const { error } = await supabase
+      const { error } = await externalSupabase
         .from('products')
         .update(updateData)
         .eq('id', selectedProduct.id);
