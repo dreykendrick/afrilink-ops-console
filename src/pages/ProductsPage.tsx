@@ -65,8 +65,9 @@ export default function ProductsPage() {
       let vendorsMap: Record<string, Vendor> = {};
       
       if (vendorIds.length > 0) {
+        // External AfriLink database uses 'vendor_profiles' table
         const { data: vendorsData } = await externalSupabase
-          .from('vendors')
+          .from('vendor_profiles')
           .select('*')
           .in('id', vendorIds);
         

@@ -60,8 +60,9 @@ export default function OrderDetailPage() {
       // Fetch vendor separately if order has vendor_id
       let vendor = null;
       if (orderData.vendor_id) {
+        // External AfriLink database uses 'vendor_profiles' table
         const { data: vendorData } = await externalSupabase
-          .from('vendors')
+          .from('vendor_profiles')
           .select('*')
           .eq('id', orderData.vendor_id)
           .single();

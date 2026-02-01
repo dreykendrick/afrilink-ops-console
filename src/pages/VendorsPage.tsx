@@ -45,8 +45,9 @@ export default function VendorsPage() {
   const fetchVendors = async () => {
     try {
       setIsLoading(true);
+      // External AfriLink database uses 'vendor_profiles' table instead of 'vendors'
       const { data, error } = await externalSupabase
-        .from('vendors')
+        .from('vendor_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -109,7 +110,7 @@ export default function VendorsPage() {
       }
 
       const { error } = await externalSupabase
-        .from('vendors')
+        .from('vendor_profiles')
         .update(updateData)
         .eq('id', selectedVendor.id);
 
