@@ -43,50 +43,93 @@ export default function AffiliatesPage() {
   const fetchAffiliates = async () => {
     setIsLoading(true);
     
-    // Try different possible table names for affiliates
-    let data: Record<string, unknown>[] | null = null;
-    let error: Error | null = null;
+    // The external database has 'user_roles' table with affiliate role
+    // and 'affiliate_links' for referral codes
+    // We need to join user data from user_roles
+    let affiliateData: Affiliate[] = [];
     
-    // First try 'affiliates' table
-    const affiliatesRes = await externalSupabase.from('affiliates').select('*').order('created_at', { ascending: false });
-    if (!affiliatesRes.error) {
-      data = affiliatesRes.data;
-    } else {
-      // Try 'user_roles' with affiliate filter
-      const userRolesRes = await externalSupabase.from('user_roles').select('*').eq('role', 'affiliate').order('created_at', { ascending: false });
-      if (!userRolesRes.error) {
-        data = userRolesRes.data;
+    // Fetch from user_roles where role is affiliate
+    const { data: roleData, error: roleError } = await externalSupabase
+      .from('user_roles')
+      .select('*')
+      .eq('role', 'affiliate')
+      .order('created_at', { ascending: false });
+    
+    if (roleError) {
+      console.error('Error fetching affiliates:', roleError);
+      setAffiliates([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Get user details for each affiliate from user_profiles or profiles table
+    const userIds = (roleData || []).map((r: Record<string, unknown>) => r.user_id);
+    
+    let userProfiles: Record<string, unknown>[] = [];
+    if (userIds.length > 0) {
+      // Try user_profiles table first
+      const { data: profilesData, error: profilesError } = await externalSupabase
+        .from('user_profiles')
+        .select('*')
+        .in('user_id', userIds);
+      
+      if (!profilesError && profilesData) {
+        userProfiles = profilesData;
       } else {
-        // Try 'users' with affiliate role
-        const usersRes = await externalSupabase.from('users').select('*').eq('role', 'affiliate').order('created_at', { ascending: false });
-        if (!usersRes.error) {
-          data = usersRes.data;
-        } else {
-          error = usersRes.error as Error;
+        // Try profiles table
+        const { data: altProfiles } = await externalSupabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        if (altProfiles) {
+          userProfiles = altProfiles;
         }
       }
     }
 
-    if (error) {
-      console.error('Error fetching affiliates:', error);
-      setAffiliates([]);
-    } else {
-      // Map to expected format with resilient field mapping
-      const mapped = (data || []).map((d: Record<string, unknown>) => ({
-        id: d.id as string,
-        user_id: (d.user_id || d.auth_user_id) as string | null,
-        full_name: (d.full_name || d.name || d.display_name) as string | null,
-        email: d.email as string | null,
-        phone: d.phone as string | null,
-        affiliate_code: (d.affiliate_code || d.referral_code || d.code) as string | null,
-        account_status: (d.account_status || d.status || 'pending') as string,
-        verification_status: (d.verification_status || 'pending') as string,
-        created_at: d.created_at as string,
-        total_referrals: (d.total_referrals || d.referral_count || 0) as number,
-        total_earnings: (d.total_earnings || d.earnings || 0) as number,
-      }));
-      setAffiliates(mapped);
+    // Get affiliate links for referral codes
+    let affiliateLinks: Record<string, unknown>[] = [];
+    if (userIds.length > 0) {
+      const { data: linksData } = await externalSupabase
+        .from('affiliate_links')
+        .select('*')
+        .in('user_id', userIds);
+      
+      if (linksData) {
+        affiliateLinks = linksData;
+      }
     }
+
+    // Map and merge the data
+    affiliateData = (roleData || []).map((r: Record<string, unknown>) => {
+      const userId = r.user_id as string;
+      const profile = userProfiles.find((p: Record<string, unknown>) => 
+        (p.user_id || p.id) === userId
+      ) || {};
+      const link = affiliateLinks.find((l: Record<string, unknown>) => 
+        l.user_id === userId
+      ) || {};
+      
+      // Derive status from the link's status or default to 'pending'
+      const status = (link.status || link.is_active === true ? 'active' : link.is_active === false ? 'suspended' : 'pending') as string;
+      
+      return {
+        id: r.id as string,
+        user_id: userId,
+        full_name: (profile.full_name || profile.name || profile.display_name) as string | null,
+        email: profile.email as string | null,
+        phone: profile.phone as string | null,
+        affiliate_code: (link.code || link.referral_code || link.affiliate_code) as string | null,
+        account_status: status,
+        verification_status: status === 'active' ? 'verified' : 'pending',
+        created_at: r.created_at as string,
+        total_referrals: (link.total_referrals || link.referral_count || 0) as number,
+        total_earnings: (link.total_earnings || link.earnings || 0) as number,
+      };
+    });
+
+    setAffiliates(affiliateData);
     setIsLoading(false);
   };
 
@@ -94,47 +137,38 @@ export default function AffiliatesPage() {
     if (!selectedAffiliate || !actionType || !adminUser) return;
     setIsActionLoading(true);
 
-    const newStatus = actionType === 'approve' ? 'active' : 'suspended';
-    const beforeData = { account_status: selectedAffiliate.account_status };
+    const newStatus = actionType === 'approve' ? 'active' : 'inactive';
+    const beforeData = { status: selectedAffiliate.account_status };
 
-    // Try updating in affiliates table first, then user_roles, then users
-    let updateError: Error | null = null;
-    
-    const { error: affiliatesError } = await externalSupabase
-      .from('affiliates')
-      .update({ account_status: newStatus, verification_status: actionType === 'approve' ? 'verified' : selectedAffiliate.verification_status })
-      .eq('id', selectedAffiliate.id);
-    
-    if (affiliatesError) {
-      const { error: userRolesError } = await externalSupabase
-        .from('user_roles')
-        .update({ account_status: newStatus })
-        .eq('id', selectedAffiliate.id);
-      
-      if (userRolesError) {
-        const { error: usersError } = await externalSupabase
-          .from('users')
-          .update({ account_status: newStatus })
-          .eq('id', selectedAffiliate.id);
-        
-        updateError = usersError as Error | null;
-      }
-    }
+    // Update the affiliate_links table status
+    const { error: linkError } = await externalSupabase
+      .from('affiliate_links')
+      .update({ 
+        status: newStatus,
+        is_active: actionType === 'approve'
+      })
+      .eq('user_id', selectedAffiliate.user_id);
 
-    if (updateError) {
-      toast.error(`Failed to ${actionType} affiliate`);
+    if (linkError) {
+      // If affiliate_links doesn't have these columns or doesn't exist for this user,
+      // we still log the action but show a warning
+      console.warn('Could not update affiliate_links:', linkError);
+      toast.warning(`Affiliate status may require manual update on external system`);
     } else {
-      await createAuditLog({
-        actionType: actionType === 'approve' ? 'AFFILIATE_APPROVED' : 'AFFILIATE_SUSPENDED',
-        entityType: 'affiliate',
-        entityId: selectedAffiliate.id,
-        beforeData,
-        afterData: { account_status: newStatus },
-        reason,
-      });
       toast.success(`Affiliate ${actionType === 'approve' ? 'approved' : 'suspended'} successfully`);
-      fetchAffiliates();
     }
+
+    // Log the audit action regardless
+    await createAuditLog({
+      actionType: actionType === 'approve' ? 'AFFILIATE_APPROVED' : 'AFFILIATE_SUSPENDED',
+      entityType: 'affiliate',
+      entityId: selectedAffiliate.id,
+      beforeData,
+      afterData: { status: newStatus },
+      reason,
+    });
+    
+    fetchAffiliates();
 
     setIsActionLoading(false);
     setSelectedAffiliate(null);
