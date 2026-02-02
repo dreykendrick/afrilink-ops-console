@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   Store,
   Package,
   PackageX,
@@ -11,7 +12,6 @@ import {
   Truck,
   CreditCard,
   Bell,
-  AlertTriangle,
   Settings,
   LogOut,
   Shield,
@@ -73,6 +73,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/users', icon: Users, label: 'Users' },
     { to: '/vendors', icon: Store, label: 'Vendors' },
+    { to: '/affiliates', icon: UserCheck, label: 'Affiliates' },
     { to: '/products', icon: Package, label: 'Products' },
     { to: '/takedowns', icon: PackageX, label: 'Takedown Requests' },
     { to: '/orders', icon: ShoppingCart, label: 'Orders' },
