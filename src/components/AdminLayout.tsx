@@ -79,7 +79,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/delivery', icon: Truck, label: 'Delivery Pricing' },
     { to: '/payments', icon: CreditCard, label: 'Payments' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
-    { to: '/disputes', icon: AlertTriangle, label: 'Disputes' },
   ];
 
   if (isSuperAdmin) {
