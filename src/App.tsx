@@ -11,6 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
 import VendorsPage from "./pages/VendorsPage";
+import AffiliatesPage from "./pages/AffiliatesPage";
 import ProductsPage from "./pages/ProductsPage";
 import TakedownRequestsPage from "./pages/TakedownRequestsPage";
 import OrdersPage from "./pages/OrdersPage";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><AdminLayout><DashboardPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><AdminLayout><UsersPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/vendors" element={<ProtectedRoute><AdminLayout><VendorsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/affiliates" element={<ProtectedRoute><AdminLayout><AffiliatesPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><AdminLayout><ProductsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/takedowns" element={<ProtectedRoute><AdminLayout><TakedownRequestsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
