@@ -54,19 +54,31 @@ export default function VendorsPage() {
       if (error) throw error;
       
       // Map external schema to expected Vendor format
-      const mappedVendors = (data || []).map((v: Record<string, unknown>) => ({
-        id: v.id as string,
-        user_id: v.user_id as string || '',
-        business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
-        city: v.city as string || v.location as string || null,
-        phone: v.phone as string || v.phone_number as string || null,
-        verification_status: (v.verification_status || v.verified || 'pending') as 'pending' | 'verified' | 'rejected',
-        account_status: (v.account_status || v.status || 'pending') as 'pending' | 'active' | 'suspended',
-        total_orders: v.total_orders as number || 0,
-        total_revenue: v.total_revenue as number || 0,
-        created_at: v.created_at as string || '',
-        updated_at: v.updated_at as string || '',
-      })) as Vendor[];
+      // Note: vendor_profiles only has verification_status, we derive account_status from it
+      const mappedVendors = (data || []).map((v: Record<string, unknown>) => {
+        const verificationStatus = (v.verification_status || 'pending') as string;
+        // Derive account_status from verification_status since the external DB doesn't have account_status
+        let accountStatus: 'pending' | 'active' | 'suspended' = 'pending';
+        if (verificationStatus === 'verified' || verificationStatus === 'approved') {
+          accountStatus = 'active';
+        } else if (verificationStatus === 'rejected' || verificationStatus === 'suspended') {
+          accountStatus = 'suspended';
+        }
+        
+        return {
+          id: v.id as string,
+          user_id: v.user_id as string || '',
+          business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
+          city: v.city as string || v.location as string || null,
+          phone: v.phone as string || v.phone_number as string || null,
+          verification_status: verificationStatus as 'pending' | 'verified' | 'rejected',
+          account_status: accountStatus,
+          total_orders: v.total_orders as number || 0,
+          total_revenue: v.total_revenue as number || 0,
+          created_at: v.created_at as string || '',
+          updated_at: v.updated_at as string || '',
+        };
+      }) as Vendor[];
       
       setVendors(mappedVendors);
     } catch (error) {
@@ -97,30 +109,26 @@ export default function VendorsPage() {
         account_status: selectedVendor.account_status, 
         verification_status: selectedVendor.verification_status 
       };
-      let updateData: Partial<Vendor> = {};
+      let updateData: Record<string, string> = {};
       let auditAction = '';
 
+      // The external database only has verification_status column
+      // We update verification_status to reflect the desired state
       switch (actionType) {
         case 'approve':
-          updateData = { 
-            account_status: 'active' as const, 
-            verification_status: 'verified' as const 
-          };
+          updateData = { verification_status: 'verified' };
           auditAction = 'VENDOR_APPROVED';
           break;
         case 'reject':
-          updateData = { 
-            account_status: 'suspended' as const, 
-            verification_status: 'rejected' as const 
-          };
+          updateData = { verification_status: 'rejected' };
           auditAction = 'VENDOR_REJECTED';
           break;
         case 'suspend':
-          updateData = { account_status: 'suspended' as const };
+          updateData = { verification_status: 'suspended' };
           auditAction = 'VENDOR_SUSPENDED';
           break;
         case 'unsuspend':
-          updateData = { account_status: 'active' as const };
+          updateData = { verification_status: 'verified' };
           auditAction = 'VENDOR_UNSUSPENDED';
           break;
       }
