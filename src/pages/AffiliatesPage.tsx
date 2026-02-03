@@ -108,11 +108,23 @@ export default function AffiliatesPage() {
         (p.user_id || p.id) === userId
       ) || {};
       const link = affiliateLinks.find((l: Record<string, unknown>) => 
-        l.user_id === userId
+        (l.id === userId || l.affiliate_id === userId)
       ) || {};
       
-      // Derive status from the link's status or default to 'pending'
-      const status = (link.status || link.is_active === true ? 'active' : link.is_active === false ? 'suspended' : 'pending') as string;
+      // Derive status from profile.verification_status as primary source
+      // Map: verified -> active, pending -> pending, suspended/rejected -> suspended
+      const profileVerificationStatus = (profile.verification_status || 'pending') as string;
+      let accountStatus = 'pending';
+      if (profileVerificationStatus === 'verified' || profileVerificationStatus === 'approved') {
+        accountStatus = 'active';
+      } else if (profileVerificationStatus === 'suspended' || profileVerificationStatus === 'rejected') {
+        accountStatus = 'suspended';
+      }
+      
+      // Also check link status as fallback
+      if (accountStatus === 'pending' && link.status) {
+        accountStatus = link.status as string;
+      }
       
       return {
         id: r.id as string,
@@ -121,8 +133,8 @@ export default function AffiliatesPage() {
         email: profile.email as string | null,
         phone: profile.phone as string | null,
         affiliate_code: (link.code || link.referral_code || link.affiliate_code) as string | null,
-        account_status: status,
-        verification_status: status === 'active' ? 'verified' : 'pending',
+        account_status: accountStatus,
+        verification_status: profileVerificationStatus,
         created_at: r.created_at as string,
         total_referrals: (link.total_referrals || link.referral_count || 0) as number,
         total_earnings: (link.total_earnings || link.earnings || 0) as number,
@@ -140,46 +152,24 @@ export default function AffiliatesPage() {
     const newStatus = actionType === 'approve' ? 'active' : 'inactive';
     const beforeData = { status: selectedAffiliate.account_status };
 
-    // Update the affiliate_links table status
-    // Try different column combinations since external schema varies
-    let updateSuccess = false;
+    // Update the profiles table verification_status (primary source of truth)
+    const newVerificationStatus = actionType === 'approve' ? 'verified' : 'suspended';
     
-    // First try with 'id' matching affiliate_links.id (using the user's profile id)
-    const { error: linkError1 } = await externalSupabase
-      .from('affiliate_links')
-      .update({ status: newStatus })
+    const { error: profileError } = await externalSupabase
+      .from('profiles')
+      .update({ verification_status: newVerificationStatus })
       .eq('id', selectedAffiliate.user_id);
     
-    if (!linkError1) {
-      updateSuccess = true;
-    } else {
-      // Try with affiliate_id column
-      const { error: linkError2 } = await externalSupabase
-        .from('affiliate_links')
-        .update({ status: newStatus })
-        .eq('affiliate_id', selectedAffiliate.user_id);
-      
-      if (!linkError2) {
-        updateSuccess = true;
-      } else {
-        // Try updating profiles table verification_status as fallback
-        const { error: profileError } = await externalSupabase
-          .from('profiles')
-          .update({ verification_status: actionType === 'approve' ? 'verified' : 'suspended' })
-          .eq('id', selectedAffiliate.user_id);
-        
-        if (!profileError) {
-          updateSuccess = true;
-        }
-      }
+    if (profileError) {
+      console.error('Could not update affiliate status:', profileError);
+      toast.error('Failed to update affiliate status');
+      setIsActionLoading(false);
+      setSelectedAffiliate(null);
+      setActionType(null);
+      return;
     }
 
-    if (!updateSuccess) {
-      console.warn('Could not update affiliate status on external system');
-      toast.warning(`Affiliate status may require manual update on external system`);
-    } else {
-      toast.success(`Affiliate ${actionType === 'approve' ? 'approved' : 'suspended'} successfully`);
-    }
+    toast.success(`Affiliate ${actionType === 'approve' ? 'approved' : 'suspended'} successfully`);
 
     // Log the audit action regardless
     await createAuditLog({
