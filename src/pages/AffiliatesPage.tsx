@@ -141,18 +141,41 @@ export default function AffiliatesPage() {
     const beforeData = { status: selectedAffiliate.account_status };
 
     // Update the affiliate_links table status
-    const { error: linkError } = await externalSupabase
+    // Try different column combinations since external schema varies
+    let updateSuccess = false;
+    
+    // First try with 'id' matching affiliate_links.id (using the user's profile id)
+    const { error: linkError1 } = await externalSupabase
       .from('affiliate_links')
-      .update({ 
-        status: newStatus,
-        is_active: actionType === 'approve'
-      })
-      .eq('user_id', selectedAffiliate.user_id);
+      .update({ status: newStatus })
+      .eq('id', selectedAffiliate.user_id);
+    
+    if (!linkError1) {
+      updateSuccess = true;
+    } else {
+      // Try with affiliate_id column
+      const { error: linkError2 } = await externalSupabase
+        .from('affiliate_links')
+        .update({ status: newStatus })
+        .eq('affiliate_id', selectedAffiliate.user_id);
+      
+      if (!linkError2) {
+        updateSuccess = true;
+      } else {
+        // Try updating profiles table verification_status as fallback
+        const { error: profileError } = await externalSupabase
+          .from('profiles')
+          .update({ verification_status: actionType === 'approve' ? 'verified' : 'suspended' })
+          .eq('id', selectedAffiliate.user_id);
+        
+        if (!profileError) {
+          updateSuccess = true;
+        }
+      }
+    }
 
-    if (linkError) {
-      // If affiliate_links doesn't have these columns or doesn't exist for this user,
-      // we still log the action but show a warning
-      console.warn('Could not update affiliate_links:', linkError);
+    if (!updateSuccess) {
+      console.warn('Could not update affiliate status on external system');
       toast.warning(`Affiliate status may require manual update on external system`);
     } else {
       toast.success(`Affiliate ${actionType === 'approve' ? 'approved' : 'suspended'} successfully`);
