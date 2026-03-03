@@ -17,6 +17,10 @@ import {
   Shield,
   Menu,
   X,
+  Wallet,
+  BookOpen,
+  Banknote,
+  ShoppingBag,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -82,6 +86,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/notifications', icon: Bell, label: 'Notifications' },
   ];
 
+  const checkoutNavItems = [
+    { to: '/checkout/payments', icon: Wallet, label: 'Checkout Payments' },
+    { to: '/checkout/orders', icon: ShoppingBag, label: 'Checkout Orders' },
+    { to: '/checkout/ledger', icon: BookOpen, label: 'Checkout Ledger' },
+    { to: '/checkout/payouts', icon: Banknote, label: 'Checkout Payouts' },
+  ];
+
   if (isSuperAdmin) {
     navItems.push({ to: '/settings', icon: Settings, label: 'Settings' });
   }
@@ -106,6 +117,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {navItems.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
+          <div className="pt-3 mt-3 border-t border-sidebar-border">
+            <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Checkout</p>
+            {checkoutNavItems.map((item) => (
+              <NavItem key={item.to} {...item} />
+            ))}
+          </div>
         </nav>
 
         {/* User / Logout */}
@@ -170,6 +187,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {navItems.map((item) => (
             <NavItem key={item.to} {...item} onClick={closeMobileMenu} />
           ))}
+          <div className="pt-3 mt-3 border-t border-sidebar-border">
+            <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Checkout</p>
+            {checkoutNavItems.map((item) => (
+              <NavItem key={item.to} {...item} onClick={closeMobileMenu} />
+            ))}
+          </div>
           <div className="pt-4 mt-4 border-t border-sidebar-border">
             <button
               onClick={handleSignOut}
