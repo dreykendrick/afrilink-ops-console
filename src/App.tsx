@@ -21,6 +21,10 @@ import PaymentsPage from "./pages/PaymentsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import DisputesPage from "./pages/DisputesPage";
 import SettingsPage from "./pages/SettingsPage";
+import CheckoutPaymentsPage from "./pages/CheckoutPaymentsPage";
+import CheckoutOrdersPage from "./pages/CheckoutOrdersPage";
+import CheckoutLedgerPage from "./pages/CheckoutLedgerPage";
+import CheckoutPayoutsPage from "./pages/CheckoutPayoutsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +52,10 @@ const App = () => (
               <Route path="/notifications" element={<ProtectedRoute><AdminLayout><NotificationsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/disputes" element={<ProtectedRoute><AdminLayout><DisputesPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute requiredRole="SUPER_ADMIN"><AdminLayout><SettingsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/payments" element={<ProtectedRoute><AdminLayout><CheckoutPaymentsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/orders" element={<ProtectedRoute><AdminLayout><CheckoutOrdersPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/ledger" element={<ProtectedRoute><AdminLayout><CheckoutLedgerPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/payouts" element={<ProtectedRoute><AdminLayout><CheckoutPayoutsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ExternalAuthProvider>
