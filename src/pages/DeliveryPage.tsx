@@ -28,24 +28,22 @@ export default function DeliveryPage() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    // External AfriLink database uses 'delivery_zones' table
     const [zonesRes, crossRes] = await Promise.all([
       externalSupabase.from('delivery_zones').select('*').order('city'),
-      externalSupabase.from('delivery_routes').select('*').order('from_city'),
+      externalSupabase.from('cross_city_fees').select('*').order('from_city'),
     ]);
-    // Map external schema to expected format
     const mappedZones = (zonesRes.data || []).map((z: Record<string, unknown>) => ({
       id: z.id as string,
       city: z.city as string || '',
       zone_name: z.zone_name as string || z.name as string || '',
-      fee: z.fee as number || z.delivery_fee as number || 0,
+      fee: (z.delivery_fee as number) ?? (z.fee as number) ?? 0,
       is_active: z.is_active as boolean ?? true,
     }));
     const mappedRoutes = (crossRes.data || []).map((c: Record<string, unknown>) => ({
       id: c.id as string,
-      from_city: c.from_city as string || c.origin as string || '',
-      to_city: c.to_city as string || c.destination as string || '',
-      fee: c.fee as number || c.delivery_fee as number || 0,
+      from_city: c.from_city as string || '',
+      to_city: c.to_city as string || '',
+      fee: (c.delivery_fee as number) ?? (c.fee as number) ?? 0,
       is_active: c.is_active as boolean ?? true,
     }));
     setZones(mappedZones);
@@ -54,12 +52,14 @@ export default function DeliveryPage() {
   };
 
   const handleSaveZone = async () => {
-    const data = { city: zoneForm.city, zone_name: zoneForm.zone_name, fee: parseFloat(zoneForm.fee) || 0 };
+    const data = { city: zoneForm.city, zone_name: zoneForm.zone_name, delivery_fee: parseFloat(zoneForm.fee) || 0 };
+    let error;
     if (editingZone) {
-      await externalSupabase.from('delivery_zones').update(data).eq('id', editingZone.id);
+      ({ error } = await externalSupabase.from('delivery_zones').update(data).eq('id', editingZone.id));
     } else {
-      await externalSupabase.from('delivery_zones').insert(data);
+      ({ error } = await externalSupabase.from('delivery_zones').insert(data));
     }
+    if (error) { toast.error(error.message); return; }
     toast.success('Zone saved');
     setShowZoneDialog(false);
     setEditingZone(null);
@@ -68,12 +68,14 @@ export default function DeliveryPage() {
   };
 
   const handleSaveCross = async () => {
-    const data = { from_city: crossForm.from_city, to_city: crossForm.to_city, fee: parseFloat(crossForm.fee) || 0 };
+    const data = { from_city: crossForm.from_city, to_city: crossForm.to_city, delivery_fee: parseFloat(crossForm.fee) || 0 };
+    let error;
     if (editingCross) {
-      await externalSupabase.from('delivery_routes').update(data).eq('id', editingCross.id);
+      ({ error } = await externalSupabase.from('cross_city_fees').update(data).eq('id', editingCross.id));
     } else {
-      await externalSupabase.from('delivery_routes').insert(data);
+      ({ error } = await externalSupabase.from('cross_city_fees').insert(data));
     }
+    if (error) { toast.error(error.message); return; }
     toast.success('Cross-city fee saved');
     setShowCrossDialog(false);
     setEditingCross(null);
