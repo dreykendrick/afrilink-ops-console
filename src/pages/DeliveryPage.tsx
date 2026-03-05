@@ -46,9 +46,14 @@ export default function DeliveryPage() {
       callApi<Zone[]>({ path: '/admin/zones', showErrorToast: false }),
       callApi<CrossCityFee[]>({ path: '/admin/cross-city-fees', showErrorToast: false }),
     ]);
-    setCities(citiesRes.data || []);
-    setZones(zonesRes.data || []);
-    setCrossFees(crossRes.data || []);
+    const extractArray = (res: any): any[] => {
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray(res.data)) return res.data;
+      return [];
+    };
+    setCities(extractArray(citiesRes.data));
+    setZones(extractArray(zonesRes.data));
+    setCrossFees(extractArray(crossRes.data));
 
     // Sync to local DB in background
     syncToLocalDb(zonesRes.data || [], crossRes.data || [], citiesRes.data || []);
