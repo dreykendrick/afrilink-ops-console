@@ -117,7 +117,7 @@ export default function CheckoutOrdersPage() {
                   <TableCell className="font-mono text-xs">{o.orderId || o.id || '—'}</TableCell>
                   <TableCell className="whitespace-nowrap">{o.date ? format(new Date(o.date), 'MMM d, yyyy') : '—'}</TableCell>
                   <TableCell><Badge variant={statusColor(o.status)}>{o.status}</Badge></TableCell>
-                  <TableCell className="font-medium">₦{Number(o.total || 0).toLocaleString()}</TableCell>
+                  <TableCell className="font-medium">TSh{Number(o.total || 0).toLocaleString()}</TableCell>
                   <TableCell>{o.source || '—'}</TableCell>
                   <TableCell>{o.buyerRole || '—'}</TableCell>
                   <TableCell className="font-mono text-xs max-w-[100px] truncate">{o.vendorId || '—'}</TableCell>

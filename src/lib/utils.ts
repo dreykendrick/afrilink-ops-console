@@ -12,9 +12,9 @@ export function maskPhone(phone: string | null): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-NG', {
+  return new Intl.NumberFormat('en-TZ', {
     style: 'currency',
-    currency: 'NGN',
+    currency: 'TZS',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);

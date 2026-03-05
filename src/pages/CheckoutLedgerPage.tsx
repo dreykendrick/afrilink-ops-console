@@ -102,7 +102,7 @@ export default function CheckoutLedgerPage() {
                   <TableCell><Badge variant="outline">{e.type}</Badge></TableCell>
                   <TableCell>{e.recipientType || '—'}</TableCell>
                   <TableCell className="font-mono text-xs max-w-[120px] truncate">{e.recipientId || '—'}</TableCell>
-                  <TableCell className="font-medium">₦{Number(e.amount || 0).toLocaleString()}</TableCell>
+                  <TableCell className="font-medium">TSh{Number(e.amount || 0).toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge variant={e.status === 'paid' ? 'default' : e.status === 'pending' ? 'secondary' : 'destructive'}>
                       {e.status}

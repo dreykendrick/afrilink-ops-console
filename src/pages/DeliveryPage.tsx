@@ -126,7 +126,7 @@ export default function DeliveryPage() {
           <div className="space-y-4">
             <div><Label>City</Label><Input value={zoneForm.city} onChange={(e) => setZoneForm({ ...zoneForm, city: e.target.value })} className="bg-input" /></div>
             <div><Label>Zone Name</Label><Input value={zoneForm.zone_name} onChange={(e) => setZoneForm({ ...zoneForm, zone_name: e.target.value })} className="bg-input" /></div>
-            <div><Label>Fee (NGN)</Label><Input type="number" value={zoneForm.fee} onChange={(e) => setZoneForm({ ...zoneForm, fee: e.target.value })} className="bg-input" /></div>
+            <div><Label>Fee (TSH)</Label><Input type="number" value={zoneForm.fee} onChange={(e) => setZoneForm({ ...zoneForm, fee: e.target.value })} className="bg-input" /></div>
           </div>
           <DialogFooter><Button onClick={handleSaveZone}>Save</Button></DialogFooter>
         </DialogContent>
@@ -138,7 +138,7 @@ export default function DeliveryPage() {
           <div className="space-y-4">
             <div><Label>From City</Label><Input value={crossForm.from_city} onChange={(e) => setCrossForm({ ...crossForm, from_city: e.target.value })} className="bg-input" /></div>
             <div><Label>To City</Label><Input value={crossForm.to_city} onChange={(e) => setCrossForm({ ...crossForm, to_city: e.target.value })} className="bg-input" /></div>
-            <div><Label>Fee (NGN)</Label><Input type="number" value={crossForm.fee} onChange={(e) => setCrossForm({ ...crossForm, fee: e.target.value })} className="bg-input" /></div>
+            <div><Label>Fee (TSH)</Label><Input type="number" value={crossForm.fee} onChange={(e) => setCrossForm({ ...crossForm, fee: e.target.value })} className="bg-input" /></div>
           </div>
           <DialogFooter><Button onClick={handleSaveCross}>Save</Button></DialogFooter>
         </DialogContent>
