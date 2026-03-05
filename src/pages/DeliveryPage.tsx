@@ -55,14 +55,15 @@ export default function DeliveryPage() {
       }
       return [];
     };
-    console.log('[Delivery] citiesRes.data:', JSON.stringify(citiesRes.data));
-    console.log('[Delivery] zonesRes.data:', JSON.stringify(zonesRes.data));
-    setCities(extractArray(citiesRes.data));
-    setZones(extractArray(zonesRes.data));
-    setCrossFees(extractArray(crossRes.data));
+    const citiesArr = extractArray(citiesRes.data);
+    const zonesArr = extractArray(zonesRes.data);
+    const crossArr = extractArray(crossRes.data);
+    setCities(citiesArr);
+    setZones(zonesArr);
+    setCrossFees(crossArr);
 
     // Sync to local DB in background
-    syncToLocalDb(zonesRes.data || [], crossRes.data || [], citiesRes.data || []);
+    syncToLocalDb(zonesArr, crossArr, citiesArr);
 
     setIsLoading(false);
   }, [callApi]);
