@@ -48,15 +48,22 @@ export default function DeliveryPage() {
     ]);
     const extractArray = (res: any): any[] => {
       if (Array.isArray(res)) return res;
-      if (res && Array.isArray(res.data)) return res.data;
+      if (res && typeof res === 'object') {
+        // Find the first array value in the response object (e.g. { cities: [...] })
+        const arrVal = Object.values(res).find(v => Array.isArray(v));
+        if (arrVal) return arrVal as any[];
+      }
       return [];
     };
-    setCities(extractArray(citiesRes.data));
-    setZones(extractArray(zonesRes.data));
-    setCrossFees(extractArray(crossRes.data));
+    const citiesArr = extractArray(citiesRes.data);
+    const zonesArr = extractArray(zonesRes.data);
+    const crossArr = extractArray(crossRes.data);
+    setCities(citiesArr);
+    setZones(zonesArr);
+    setCrossFees(crossArr);
 
     // Sync to local DB in background
-    syncToLocalDb(zonesRes.data || [], crossRes.data || [], citiesRes.data || []);
+    syncToLocalDb(zonesArr, crossArr, citiesArr);
 
     setIsLoading(false);
   }, [callApi]);
