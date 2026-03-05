@@ -52,8 +52,8 @@ export default function DeliveryPage() {
   };
 
   const handleSaveZone = async () => {
-    const data = { city: zoneForm.city, zone_name: zoneForm.zone_name, delivery_fee: parseFloat(zoneForm.fee) || 0 };
-    let error;
+    const feeVal = parseFloat(zoneForm.fee) || 0;
+    const data: Record<string, unknown> = { city: zoneForm.city, zone_name: zoneForm.zone_name, base_fee: feeVal };
     if (editingZone) {
       ({ error } = await externalSupabase.from('delivery_zones').update(data).eq('id', editingZone.id));
     } else {
