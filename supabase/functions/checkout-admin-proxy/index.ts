@@ -119,6 +119,7 @@ Deno.serve(async (req) => {
 
     const response = await fetch(url, fetchOptions);
     const responseData = await response.text();
+    console.log(`[proxy] Downstream ${method} ${path} → ${response.status}`);
 
     let parsedData;
     try {
@@ -127,8 +128,10 @@ Deno.serve(async (req) => {
       parsedData = responseData;
     }
 
-    return new Response(JSON.stringify(parsedData), {
-      status: response.status,
+    // Always return 200 to avoid supabase client treating non-2xx as invoke error
+    // Embed original status for the frontend to inspect if needed
+    return new Response(JSON.stringify({ data: parsedData, status: response.status }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
