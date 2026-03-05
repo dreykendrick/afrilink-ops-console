@@ -154,7 +154,7 @@ export default function CheckoutPaymentsPage() {
               {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="whitespace-nowrap">{p.date ? format(new Date(p.date), 'MMM d, yyyy') : '—'}</TableCell>
-                  <TableCell className="font-medium">₦{Number(p.amount || 0).toLocaleString()}</TableCell>
+                  <TableCell className="font-medium">TSh{Number(p.amount || 0).toLocaleString()}</TableCell>
                   <TableCell><Badge variant={statusColor(p.status)}>{p.status}</Badge></TableCell>
                   <TableCell className="font-mono text-xs max-w-[120px] truncate">{p.providerReference || '—'}</TableCell>
                   <TableCell className="font-mono text-xs max-w-[120px] truncate">{p.orderId || '—'}</TableCell>

@@ -171,7 +171,7 @@ export default function CheckoutPayoutsPage() {
             {balance !== null && (
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-xl font-bold text-foreground">₦{balance.toLocaleString()}</p>
+                <p className="text-xl font-bold text-foreground">TSh{balance.toLocaleString()}</p>
               </div>
             )}
 
@@ -192,7 +192,7 @@ export default function CheckoutPayoutsPage() {
             )}
 
             <div className="space-y-2">
-              <Label>Amount (₦)</Label>
+              <Label>Amount (TSh)</Label>
               <Input
                 type="number"
                 value={payoutAmount}
@@ -224,7 +224,7 @@ export default function CheckoutPayoutsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Minimum Payout Amount (₦)</Label>
+              <Label>Minimum Payout Amount (TSh)</Label>
               <Input
                 type="number"
                 value={minAmount}
@@ -263,7 +263,7 @@ export default function CheckoutPayoutsPage() {
                       <TableCell className="font-mono text-xs">{b.id}</TableCell>
                       <TableCell>{b.date || '—'}</TableCell>
                       <TableCell>{b.count}</TableCell>
-                      <TableCell className="font-medium">₦{Number(b.total || 0).toLocaleString()}</TableCell>
+                      <TableCell className="font-medium">TSh{Number(b.total || 0).toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={b.status === 'completed' ? 'default' : 'secondary'}>{b.status}</Badge>
                       </TableCell>
