@@ -51,6 +51,8 @@ export default function DeliveryPage() {
       if (res && Array.isArray(res.data)) return res.data;
       return [];
     };
+    console.log('[Delivery] citiesRes.data:', JSON.stringify(citiesRes.data));
+    console.log('[Delivery] zonesRes.data:', JSON.stringify(zonesRes.data));
     setCities(extractArray(citiesRes.data));
     setZones(extractArray(zonesRes.data));
     setCrossFees(extractArray(crossRes.data));
