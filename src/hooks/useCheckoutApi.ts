@@ -38,7 +38,9 @@ export function useCheckoutApi() {
         return { data: null, error: msg };
       }
 
-      return { data: data as T, error: null };
+      // Unwrap proxy envelope { data, status } if present
+      const result = data?.data !== undefined ? data.data : data;
+      return { data: result as T, error: null };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unexpected error';
       if (showErrorToast) toast({ title: 'Error', description: msg, variant: 'destructive' });
