@@ -69,6 +69,20 @@ export default function DeliveryPage() {
     fetchData();
   };
 
+  const handleDeleteZone = async (id: string) => {
+    const { error } = await supabase.from('same_city_zones').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Zone deleted');
+    fetchData();
+  };
+
+  const handleDeleteCross = async (id: string) => {
+    const { error } = await supabase.from('cross_city_fees').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Route deleted');
+    fetchData();
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="page-header">
