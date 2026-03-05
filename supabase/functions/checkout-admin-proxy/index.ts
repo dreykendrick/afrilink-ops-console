@@ -7,8 +7,17 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  console.log(`[proxy] ${req.method} received`);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -27,9 +36,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    console.log("[proxy] Verifying user...");
     const { data: userData, error: userError } = await supabase.auth.getUser();
+    console.log("[proxy] getUser result:", userError ? userError.message : userData?.user?.id);
     if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: "Unauthorized", details: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
