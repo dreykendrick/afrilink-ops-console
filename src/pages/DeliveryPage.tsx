@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { externalSupabase } from '@/integrations/external-supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { EmptyState } from '@/components/EmptyState';
 import { TableSkeleton } from '@/components/LoadingState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
-import { Truck, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { Truck, Plus, RefreshCw, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -29,36 +29,21 @@ export default function DeliveryPage() {
   const fetchData = async () => {
     setIsLoading(true);
     const [zonesRes, crossRes] = await Promise.all([
-      externalSupabase.from('delivery_zones').select('*').order('city'),
-      externalSupabase.from('cross_city_fees').select('*').order('from_city'),
+      supabase.from('same_city_zones').select('*').order('city'),
+      supabase.from('cross_city_fees').select('*').order('from_city'),
     ]);
-    const mappedZones = (zonesRes.data || []).map((z: Record<string, unknown>) => ({
-      id: z.id as string,
-      city: z.city as string || '',
-      zone_name: z.zone_name as string || z.name as string || '',
-      fee: (z.delivery_fee as number) ?? (z.fee as number) ?? 0,
-      is_active: z.is_active as boolean ?? true,
-    }));
-    const mappedRoutes = (crossRes.data || []).map((c: Record<string, unknown>) => ({
-      id: c.id as string,
-      from_city: c.from_city as string || '',
-      to_city: c.to_city as string || '',
-      fee: (c.delivery_fee as number) ?? (c.fee as number) ?? 0,
-      is_active: c.is_active as boolean ?? true,
-    }));
-    setZones(mappedZones);
-    setCrossFees(mappedRoutes);
+    setZones(zonesRes.data || []);
+    setCrossFees(crossRes.data || []);
     setIsLoading(false);
   };
 
   const handleSaveZone = async () => {
-    const feeVal = parseFloat(zoneForm.fee) || 0;
-    const data: Record<string, unknown> = { city: zoneForm.city, zone_name: zoneForm.zone_name, base_fee: feeVal };
+    const data = { city: zoneForm.city, zone_name: zoneForm.zone_name, fee: parseFloat(zoneForm.fee) || 0 };
     let error;
     if (editingZone) {
-      ({ error } = await externalSupabase.from('delivery_zones').update(data).eq('id', editingZone.id));
+      ({ error } = await supabase.from('same_city_zones').update(data).eq('id', editingZone.id));
     } else {
-      ({ error } = await externalSupabase.from('delivery_zones').insert(data));
+      ({ error } = await supabase.from('same_city_zones').insert(data));
     }
     if (error) { toast.error(error.message); return; }
     toast.success('Zone saved');
@@ -69,12 +54,12 @@ export default function DeliveryPage() {
   };
 
   const handleSaveCross = async () => {
-    const data = { from_city: crossForm.from_city, to_city: crossForm.to_city, delivery_fee: parseFloat(crossForm.fee) || 0 };
+    const data = { from_city: crossForm.from_city, to_city: crossForm.to_city, fee: parseFloat(crossForm.fee) || 0 };
     let error;
     if (editingCross) {
-      ({ error } = await externalSupabase.from('cross_city_fees').update(data).eq('id', editingCross.id));
+      ({ error } = await supabase.from('cross_city_fees').update(data).eq('id', editingCross.id));
     } else {
-      ({ error } = await externalSupabase.from('cross_city_fees').insert(data));
+      ({ error } = await supabase.from('cross_city_fees').insert(data));
     }
     if (error) { toast.error(error.message); return; }
     toast.success('Cross-city fee saved');
