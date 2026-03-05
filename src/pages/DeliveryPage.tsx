@@ -48,7 +48,11 @@ export default function DeliveryPage() {
     ]);
     const extractArray = (res: any): any[] => {
       if (Array.isArray(res)) return res;
-      if (res && Array.isArray(res.data)) return res.data;
+      if (res && typeof res === 'object') {
+        // Find the first array value in the response object (e.g. { cities: [...] })
+        const arrVal = Object.values(res).find(v => Array.isArray(v));
+        if (arrVal) return arrVal as any[];
+      }
       return [];
     };
     console.log('[Delivery] citiesRes.data:', JSON.stringify(citiesRes.data));
