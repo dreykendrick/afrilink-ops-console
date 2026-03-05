@@ -5,7 +5,7 @@ import { TableSkeleton } from '@/components/LoadingState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
-import { Truck, Plus, RefreshCw, Pencil } from 'lucide-react';
+import { Truck, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -91,7 +91,10 @@ export default function DeliveryPage() {
             <tbody>{zones.map((z) => (
               <tr key={z.id}><td className="text-foreground">{z.city}</td><td className="text-muted-foreground">{z.zone_name}</td>
                 <td className="text-foreground font-medium">{formatCurrency(z.fee)}</td>
-                <td><button onClick={() => { setEditingZone(z); setZoneForm({ city: z.city, zone_name: z.zone_name, fee: z.fee.toString() }); setShowZoneDialog(true); }} className="action-btn-secondary"><Pencil className="w-4 h-4" /></button></td>
+                <td className="flex gap-1">
+                  <button onClick={() => { setEditingZone(z); setZoneForm({ city: z.city, zone_name: z.zone_name, fee: z.fee.toString() }); setShowZoneDialog(true); }} className="action-btn-secondary"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => handleDeleteZone(z.id)} className="action-btn-secondary text-destructive"><Trash2 className="w-4 h-4" /></button>
+                </td>
               </tr>
             ))}</tbody>
           </table>
@@ -113,7 +116,10 @@ export default function DeliveryPage() {
             <tbody>{crossFees.map((c) => (
               <tr key={c.id}><td className="text-foreground">{c.from_city}</td><td className="text-foreground">{c.to_city}</td>
                 <td className="text-foreground font-medium">{formatCurrency(c.fee)}</td>
-                <td><button onClick={() => { setEditingCross(c); setCrossForm({ from_city: c.from_city, to_city: c.to_city, fee: c.fee.toString() }); setShowCrossDialog(true); }} className="action-btn-secondary"><Pencil className="w-4 h-4" /></button></td>
+                <td className="flex gap-1">
+                  <button onClick={() => { setEditingCross(c); setCrossForm({ from_city: c.from_city, to_city: c.to_city, fee: c.fee.toString() }); setShowCrossDialog(true); }} className="action-btn-secondary"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => handleDeleteCross(c.id)} className="action-btn-secondary text-destructive"><Trash2 className="w-4 h-4" /></button>
+                </td>
               </tr>
             ))}</tbody>
           </table>
