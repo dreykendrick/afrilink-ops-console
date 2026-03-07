@@ -100,17 +100,28 @@ export default function DeliverySettingsPage() {
   const fetchSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Try checkout API first
-      const res = await callApi<DeliverySettings>({ path: '/admin/delivery-settings', showErrorToast: false });
-      if (res.data && typeof res.data === 'object' && 'enabled' in res.data) {
-        setSettings(res.data);
-        setSavedSettings(res.data);
+      const res = await callApi<any>({ path: '/admin/delivery-settings', showErrorToast: false });
+      console.log('[DeliverySettings] GET response:', JSON.stringify(res.data));
+      // API returns { settings: { enabled, base_fee, ... } }
+      const raw = res.data?.settings ?? res.data;
+      if (raw && typeof raw === 'object' && 'enabled' in raw) {
+        const s: DeliverySettings = {
+          enabled: !!raw.enabled,
+          base_fee: Number(raw.base_fee) || 0,
+          price_per_km: Number(raw.price_per_km) || 0,
+          minimum_fee: Number(raw.minimum_fee) || 0,
+          maximum_fee: raw.maximum_fee != null ? Number(raw.maximum_fee) : null,
+          free_delivery_threshold: raw.free_delivery_threshold != null ? Number(raw.free_delivery_threshold) : null,
+          max_delivery_distance_km: raw.max_delivery_distance_km != null ? Number(raw.max_delivery_distance_km) : null,
+        };
+        setSettings(s);
+        setSavedSettings(s);
         setHasChanges(false);
         setIsLoading(false);
         return;
       }
-    } catch {
-      // fallback below
+    } catch (err) {
+      console.error('[DeliverySettings] GET failed:', err);
     }
 
     // Fallback: read from system_settings
