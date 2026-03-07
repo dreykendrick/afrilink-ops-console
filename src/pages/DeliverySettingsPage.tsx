@@ -157,16 +157,21 @@ export default function DeliverySettingsPage() {
       });
 
       // Also persist to local system_settings as fallback
-      await supabase
+      const settingsValue = settings as unknown as Record<string, unknown>;
+      const { data: existing } = await supabase
         .from('system_settings')
-        .upsert({
-          key: 'delivery_settings',
-          value: settings as unknown as Record<string, unknown>,
-          description: 'Delivery fee estimation settings used by checkout system',
-        }, { onConflict: 'key' });
+        .select('id')
+        .eq('key', 'delivery_settings')
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('system_settings')
+          .update({ value: settingsValue as any, description: 'Delivery fee estimation settings used by checkout system' })
+          .eq('key', 'delivery_settings');
+      }
 
       if (res.error) {
-        // Saved locally but API failed — warn user
         toast.warning('Saved locally. Checkout API sync failed — settings may not apply to live checkout until API is available.');
       } else {
         toast.success('Delivery settings saved successfully');
