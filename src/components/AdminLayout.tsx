@@ -81,7 +81,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/products', icon: Package, label: 'Products' },
     { to: '/takedowns', icon: PackageX, label: 'Takedown Requests' },
     { to: '/orders', icon: ShoppingCart, label: 'Orders' },
-    { to: '/delivery', icon: Truck, label: 'Delivery Pricing' },
+    { to: '/delivery-settings', icon: Truck, label: 'Delivery Settings' },
     
     { to: '/notifications', icon: Bell, label: 'Notifications' },
   ];

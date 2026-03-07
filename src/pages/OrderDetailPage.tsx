@@ -326,6 +326,36 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
+        {/* Delivery Information */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+            <Truck className="w-5 h-5 text-primary" />
+            Delivery Information
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Delivery Address</p>
+              <p className="font-medium text-foreground">{order.buyer_city}</p>
+              {order.buyer_address && <p className="text-foreground">{order.buyer_address}</p>}
+              {order.buyer_landmark && <p className="text-muted-foreground">Landmark: {order.buyer_landmark}</p>}
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Vendor Origin</p>
+              <p className="font-medium text-foreground">{order.vendors?.city || 'Not available'}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Delivery Fee</p>
+                <p className="font-medium text-foreground">{formatCurrency(order.delivery_fee)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Distance</p>
+                <p className="font-medium text-muted-foreground italic">Not tracked yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Product Information */}
         <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">

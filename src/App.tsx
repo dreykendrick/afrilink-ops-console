@@ -16,7 +16,7 @@ import ProductsPage from "./pages/ProductsPage";
 import TakedownRequestsPage from "./pages/TakedownRequestsPage";
 import OrdersPage from "./pages/OrdersPage";
 import OrderDetailPage from "./pages/OrderDetailPage";
-import DeliveryPage from "./pages/DeliveryPage";
+import DeliverySettingsPage from "./pages/DeliverySettingsPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import DisputesPage from "./pages/DisputesPage";
@@ -47,7 +47,7 @@ const App = () => (
               <Route path="/takedowns" element={<ProtectedRoute><AdminLayout><TakedownRequestsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><AdminLayout><OrderDetailPage /></AdminLayout></ProtectedRoute>} />
-              <Route path="/delivery" element={<ProtectedRoute><AdminLayout><DeliveryPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/delivery-settings" element={<ProtectedRoute><AdminLayout><DeliverySettingsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/payments" element={<ProtectedRoute><AdminLayout><PaymentsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><AdminLayout><NotificationsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/disputes" element={<ProtectedRoute><AdminLayout><DisputesPage /></AdminLayout></ProtectedRoute>} />
