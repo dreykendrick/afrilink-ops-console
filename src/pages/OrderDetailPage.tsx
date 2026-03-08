@@ -385,6 +385,12 @@ export default function OrderDetailPage() {
                 <p className="font-medium text-primary">{order.affiliate_code}</p>
               </div>
             )}
+            {(order as any).affiliate_user_id && (
+              <div>
+                <p className="text-sm text-muted-foreground">Affiliate ID</p>
+                <p className="font-mono text-sm text-foreground">{(order as any).affiliate_user_id}</p>
+              </div>
+            )}
           </div>
         </div>
 
