@@ -11,6 +11,8 @@ import { Loader2, Eye, RotateCcw, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingState } from '@/components/LoadingState';
 import { EmptyState } from '@/components/EmptyState';
+import { OrderSourceBadge } from '@/components/OrderSourceBadge';
+import { CommissionBreakdown } from '@/components/CommissionBreakdown';
 
 interface Payment {
   id: string;
@@ -20,9 +22,14 @@ interface Payment {
   providerReference: string;
   orderId: string;
   source: string;
+  orderSource: string;
   buyer: string;
   vendor: string;
   product: string;
+  vendorShare: number;
+  affiliateCommission: number;
+  platformFee: number;
+  affiliateId: string;
   [key: string]: unknown;
 }
 
@@ -36,6 +43,7 @@ export default function CheckoutPaymentsPage() {
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [orderSourceFilter, setOrderSourceFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +53,7 @@ export default function CheckoutPaymentsPage() {
     const qp: Record<string, string> = {};
     if (statusFilter !== 'all') qp.status = statusFilter;
     if (sourceFilter !== 'all') qp.source = sourceFilter;
+    if (orderSourceFilter !== 'all') qp.orderSource = orderSourceFilter;
     if (dateFrom) qp.dateFrom = dateFrom;
     if (dateTo) qp.dateTo = dateTo;
     if (searchQuery) qp.search = searchQuery;
@@ -59,7 +68,7 @@ export default function CheckoutPaymentsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchPayments(); }, [statusFilter, sourceFilter, dateFrom, dateTo]);
+  useEffect(() => { fetchPayments(); }, [statusFilter, sourceFilter, orderSourceFilter, dateFrom, dateTo]);
 
   const handleRetryVerify = async (payment: Payment) => {
     setRetrying(payment.id);
@@ -113,12 +122,20 @@ export default function CheckoutPaymentsPage() {
           </SelectContent>
         </Select>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Source" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Provider" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="all">All Providers</SelectItem>
             <SelectItem value="paystack">Paystack</SelectItem>
             <SelectItem value="flutterwave">Flutterwave</SelectItem>
             <SelectItem value="manual">Manual</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={orderSourceFilter} onValueChange={setOrderSourceFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Order Source" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="MARKETPLACE">Marketplace</SelectItem>
+            <SelectItem value="AFFILIATE">Affiliate</SelectItem>
           </SelectContent>
         </Select>
         <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
@@ -140,13 +157,12 @@ export default function CheckoutPaymentsPage() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Provider Ref</TableHead>
                 <TableHead>Order ID</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Buyer</TableHead>
+                <TableHead>Provider</TableHead>
                 <TableHead>Vendor</TableHead>
-                <TableHead>Product</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -155,13 +171,12 @@ export default function CheckoutPaymentsPage() {
                 <TableRow key={p.id}>
                   <TableCell className="whitespace-nowrap">{p.date ? format(new Date(p.date), 'MMM d, yyyy') : '—'}</TableCell>
                   <TableCell className="font-medium">TSh{Number(p.amount || 0).toLocaleString()}</TableCell>
+                  <TableCell><OrderSourceBadge source={p.orderSource || p.source} /></TableCell>
                   <TableCell><Badge variant={statusColor(p.status)}>{p.status}</Badge></TableCell>
                   <TableCell className="font-mono text-xs max-w-[120px] truncate">{p.providerReference || '—'}</TableCell>
                   <TableCell className="font-mono text-xs max-w-[120px] truncate">{p.orderId || '—'}</TableCell>
                   <TableCell>{p.source || '—'}</TableCell>
-                  <TableCell className="max-w-[100px] truncate">{p.buyer || '—'}</TableCell>
                   <TableCell className="max-w-[100px] truncate">{p.vendor || '—'}</TableCell>
-                  <TableCell className="max-w-[100px] truncate">{p.product || '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button size="icon" variant="ghost" onClick={() => setSelected(p)}>
@@ -186,16 +201,39 @@ export default function CheckoutPaymentsPage() {
 
       {/* Details Modal */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Payment Details</DialogTitle></DialogHeader>
           {selected && (
-            <div className="space-y-3 text-sm">
-              {Object.entries(selected).map(([key, value]) => (
-                <div key={key} className="flex justify-between gap-4">
-                  <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                  <span className="font-medium text-right truncate max-w-[250px]">{String(value ?? '—')}</span>
-                </div>
-              ))}
+            <div className="space-y-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Order Source:</span>
+                <OrderSourceBadge source={selected.orderSource || selected.source} />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="font-medium">TSh{Number(selected.amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant={statusColor(selected.status)}>{selected.status}</Badge></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Provider Ref</span><span className="font-mono text-xs">{selected.providerReference || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Order ID</span><span className="font-mono text-xs">{selected.orderId || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Provider</span><span>{selected.source || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Buyer</span><span>{selected.buyer || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Vendor</span><span>{selected.vendor || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Product</span><span>{selected.product || '—'}</span></div>
+                {selected.orderSource?.toUpperCase() === 'AFFILIATE' && selected.affiliateId && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Affiliate ID</span><span className="font-mono text-xs">{selected.affiliateId}</span></div>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-border">
+                <p className="text-sm font-semibold text-foreground mb-2">Commission Breakdown</p>
+                <CommissionBreakdown
+                  vendorShare={selected.vendorShare}
+                  affiliateCommission={selected.affiliateCommission}
+                  platformFee={selected.platformFee}
+                  orderSource={selected.orderSource}
+                  className="space-y-1"
+                />
+              </div>
             </div>
           )}
         </DialogContent>
