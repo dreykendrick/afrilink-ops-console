@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { externalSupabase } from '@/integrations/external-supabase/client';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
@@ -12,9 +13,10 @@ import { toast } from 'sonner';
 interface Payout { id: string; payout_reference: string; recipient_type: string; recipient_name: string; amount: number; status: string; created_at: string; }
 
 export default function PaymentsPage() {
+  const [searchParams] = useSearchParams();
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
 
   useEffect(() => { fetchPayouts(); }, []);
 

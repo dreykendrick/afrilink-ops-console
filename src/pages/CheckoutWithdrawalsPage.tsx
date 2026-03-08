@@ -69,6 +69,7 @@ export default function CheckoutWithdrawalsPage() {
     setActionDialog({ open: true, id, action });
   };
 
+  // Status filtering is done server-side via query params, so use full list
   const filtered = withdrawals;
 
   return (

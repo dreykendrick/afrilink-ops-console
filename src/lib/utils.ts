@@ -28,12 +28,12 @@ export function formatRelativeDate(dateString: string): string {
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  return date.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString('en-TZ', { day: 'numeric', month: 'short' });
 }
 
 export function formatDate(dateString: string | null): string {
   if (!dateString) return '---';
-  return new Date(dateString).toLocaleDateString('en-NG', {
+  return new Date(dateString).toLocaleDateString('en-TZ', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
