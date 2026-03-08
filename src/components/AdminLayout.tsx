@@ -21,6 +21,7 @@ import {
   BookOpen,
   Banknote,
   ShoppingBag,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { useState } from 'react';
 
