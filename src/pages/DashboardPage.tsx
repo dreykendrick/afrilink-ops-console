@@ -97,22 +97,19 @@ export default function DashboardPage() {
           .from('notifications')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'failed')
-          .then(r => r)
-          .catch(() => ({ count: 0, data: null, error: null })),
+          .then(r => ({ count: r.count || 0 })),
         // Disputes might not exist
         externalSupabase
           .from('disputes')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'open')
-          .then(r => r)
-          .catch(() => ({ count: 0, data: null, error: null })),
+          .then(r => ({ count: r.count || 0 })),
         // Payouts might not exist
         externalSupabase
           .from('payouts')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'pending')
-          .then(r => r)
-          .catch(() => ({ count: 0, data: null, error: null })),
+          .then(r => ({ count: r.count || 0 })),
       ]);
 
       const ordersDataToday = ordersToday.data || [];
