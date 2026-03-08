@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Order, Vendor, User as AppUser } from '@/lib/types';
+import { OrderSourceBadge } from '@/components/OrderSourceBadge';
 
 interface OrderDetail extends Order {
   vendors: Vendor | null;
@@ -219,6 +220,7 @@ export default function OrderDetailPage() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
             Order {order.order_number}
             <StatusChip status={order.status} />
+            <OrderSourceBadge source={(order as any).orderSource || ((order as any).affiliate_code ? 'AFFILIATE' : 'MARKETPLACE')} />
           </h1>
           <p className="text-muted-foreground">Created {formatDate(order.created_at)}</p>
         </div>
@@ -381,6 +383,12 @@ export default function OrderDetailPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Affiliate Code</p>
                 <p className="font-medium text-primary">{order.affiliate_code}</p>
+              </div>
+            )}
+            {(order as any).affiliate_user_id && (
+              <div>
+                <p className="text-sm text-muted-foreground">Affiliate ID</p>
+                <p className="font-mono text-sm text-foreground">{(order as any).affiliate_user_id}</p>
               </div>
             )}
           </div>
