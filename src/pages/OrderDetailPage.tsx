@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Order, Vendor, User as AppUser } from '@/lib/types';
+import { OrderSourceBadge } from '@/components/OrderSourceBadge';
 
 interface OrderDetail extends Order {
   vendors: Vendor | null;
