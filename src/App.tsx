@@ -58,6 +58,8 @@ const App = () => (
               <Route path="/checkout/orders" element={<ProtectedRoute><AdminLayout><CheckoutOrdersPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/checkout/ledger" element={<ProtectedRoute><AdminLayout><CheckoutLedgerPage /></AdminLayout></ProtectedRoute>} />
               <Route path="/checkout/payouts" element={<ProtectedRoute><AdminLayout><CheckoutPayoutsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/withdrawals" element={<ProtectedRoute><AdminLayout><CheckoutWithdrawalsPage /></AdminLayout></ProtectedRoute>} />
+              <Route path="/checkout/wallets" element={<ProtectedRoute><AdminLayout><CheckoutWalletsPage /></AdminLayout></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ExternalAuthProvider>
