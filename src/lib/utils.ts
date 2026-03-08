@@ -33,7 +33,7 @@ export function formatRelativeDate(dateString: string): string {
 
 export function formatDate(dateString: string | null): string {
   if (!dateString) return '---';
-  return new Date(dateString).toLocaleDateString('en-NG', {
+  return new Date(dateString).toLocaleDateString('en-TZ', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

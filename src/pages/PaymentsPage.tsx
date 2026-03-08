@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { externalSupabase } from '@/integrations/external-supabase/client';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';

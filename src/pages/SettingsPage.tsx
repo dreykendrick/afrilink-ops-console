@@ -26,7 +26,14 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     for (const [key, value] of Object.entries(settings)) {
-      await supabase.from('system_settings').update({ value: value }).eq('key', key);
+      // system_settings.value is jsonb — wrap raw strings so they store as valid JSON
+      let jsonValue: unknown;
+      try {
+        jsonValue = JSON.parse(value);
+      } catch {
+        jsonValue = value;
+      }
+      await supabase.from('system_settings').update({ value: jsonValue }).eq('key', key);
     }
     toast.success('Settings saved');
     setIsSaving(false);

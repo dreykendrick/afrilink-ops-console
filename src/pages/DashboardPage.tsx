@@ -43,7 +43,17 @@ export default function DashboardPage() {
       weekAgo.setHours(0, 0, 0, 0);
       const weekAgoISO = weekAgo.toISOString();
 
-      // Fetch all metrics in parallel
+      // External DB order statuses that indicate payment was received
+      // The external DB uses statuses like 'payment_confirmed', 'vendor_notified', etc.
+      const paidStatuses = [
+        'payment_confirmed', 'vendor_notified', 'out_for_delivery',
+        'delivered_pending_confirmation', 'confirmed',
+        // Also handle uppercase checkout-style statuses in case of mixed data
+        'paid', 'shipped', 'delivered', 'completed',
+        'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED',
+      ];
+
+      // Fetch all metrics in parallel, catching individual failures
       const [
         ordersToday,
         ordersWeek,
@@ -56,42 +66,53 @@ export default function DashboardPage() {
       ] = await Promise.all([
         externalSupabase
           .from('orders')
-          .select('id, total_amount')
-          .gte('created_at', todayISO),
+          .select('id')
+          .gte('created_at', todayISO)
+          .then(r => r),
         externalSupabase
           .from('orders')
-          .select('id, total_amount')
-          .gte('created_at', weekAgoISO),
-        // GMV: only paid orders (PAID, SHIPPED, DELIVERED, COMPLETED)
+          .select('id')
+          .gte('created_at', weekAgoISO)
+          .then(r => r),
+        // GMV: only paid orders
         externalSupabase
           .from('orders')
           .select('id, total_amount')
           .gte('created_at', todayISO)
-          .in('status', ['paid', 'shipped', 'delivered', 'completed', 'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED']),
+          .in('status', paidStatuses)
+          .then(r => r),
         externalSupabase
           .from('orders')
           .select('id, total_amount')
           .gte('created_at', weekAgoISO)
-          .in('status', ['paid', 'shipped', 'delivered', 'completed', 'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED']),
+          .in('status', paidStatuses)
+          .then(r => r),
         externalSupabase
           .from('products')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending'),
-        // External DB uses 'notifications' instead of 'notifications_log'
+          .eq('status', 'pending')
+          .then(r => r),
+        // External DB uses 'notifications' table
         externalSupabase
           .from('notifications')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'failed'),
-        // Disputes might not exist - handle gracefully
+          .eq('status', 'failed')
+          .then(r => r)
+          .catch(() => ({ count: 0, data: null, error: null })),
+        // Disputes might not exist
         externalSupabase
           .from('disputes')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'open'),
-        // Payouts might not exist - handle gracefully
+          .eq('status', 'open')
+          .then(r => r)
+          .catch(() => ({ count: 0, data: null, error: null })),
+        // Payouts might not exist
         externalSupabase
           .from('payouts')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending'),
+          .eq('status', 'pending')
+          .then(r => r)
+          .catch(() => ({ count: 0, data: null, error: null })),
       ]);
 
       const ordersDataToday = ordersToday.data || [];
@@ -102,12 +123,12 @@ export default function DashboardPage() {
       setMetrics({
         ordersToday: ordersDataToday.length,
         ordersThisWeek: ordersDataWeek.length,
-        gmvToday: paidDataToday.reduce((sum, o) => sum + (o.total_amount || 0), 0),
-        gmvThisWeek: paidDataWeek.reduce((sum, o) => sum + (o.total_amount || 0), 0),
+        gmvToday: paidDataToday.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+        gmvThisWeek: paidDataWeek.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
         pendingProductReviews: pendingProducts.count || 0,
-        failedNotifications: failedNotifications.count || 0,
-        pendingDisputes: pendingDisputes.count || 0,
-        pendingPayouts: pendingPayouts.count || 0,
+        failedNotifications: (failedNotifications as any).count || 0,
+        pendingDisputes: (pendingDisputes as any).count || 0,
+        pendingPayouts: (pendingPayouts as any).count || 0,
       });
     } catch (error) {
       console.error('Error fetching metrics:', error);
