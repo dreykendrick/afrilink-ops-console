@@ -220,6 +220,7 @@ export default function OrderDetailPage() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
             Order {order.order_number}
             <StatusChip status={order.status} />
+            <OrderSourceBadge source={(order as any).orderSource || ((order as any).affiliate_code ? 'AFFILIATE' : 'MARKETPLACE')} />
           </h1>
           <p className="text-muted-foreground">Created {formatDate(order.created_at)}</p>
         </div>
