@@ -47,6 +47,8 @@ export default function DashboardPage() {
       const [
         ordersToday,
         ordersWeek,
+        paidOrdersToday,
+        paidOrdersWeek,
         pendingProducts,
         failedNotifications,
         pendingDisputes,
@@ -94,12 +96,14 @@ export default function DashboardPage() {
 
       const ordersDataToday = ordersToday.data || [];
       const ordersDataWeek = ordersWeek.data || [];
+      const paidDataToday = paidOrdersToday.data || [];
+      const paidDataWeek = paidOrdersWeek.data || [];
 
       setMetrics({
         ordersToday: ordersDataToday.length,
         ordersThisWeek: ordersDataWeek.length,
-        gmvToday: ordersDataToday.reduce((sum, o) => sum + (o.total_amount || 0), 0),
-        gmvThisWeek: ordersDataWeek.reduce((sum, o) => sum + (o.total_amount || 0), 0),
+        gmvToday: paidDataToday.reduce((sum, o) => sum + (o.total_amount || 0), 0),
+        gmvThisWeek: paidDataWeek.reduce((sum, o) => sum + (o.total_amount || 0), 0),
         pendingProductReviews: pendingProducts.count || 0,
         failedNotifications: failedNotifications.count || 0,
         pendingDisputes: pendingDisputes.count || 0,
