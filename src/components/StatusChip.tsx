@@ -27,6 +27,15 @@ const statusConfig: Record<string, { label: string; variant: string }> = {
   disputed: { label: 'Disputed', variant: 'open' },
   cancelled: { label: 'Cancelled', variant: 'cancelled' },
   
+  // Checkout order statuses (uppercase from checkout API)
+  PENDING: { label: 'Pending', variant: 'pending' },
+  PAID: { label: 'Paid', variant: 'approved' },
+  SHIPPED: { label: 'Shipped', variant: 'processing' },
+  DELIVERED: { label: 'Delivered', variant: 'confirmed' },
+  COMPLETED: { label: 'Completed', variant: 'completed' },
+  REFUNDED: { label: 'Refunded', variant: 'cancelled' },
+  DISPUTED: { label: 'Disputed', variant: 'open' },
+  
   // Notification status
   sent: { label: 'Sent', variant: 'approved' },
   failed: { label: 'Failed', variant: 'failed' },
