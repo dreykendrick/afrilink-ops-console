@@ -60,6 +60,17 @@ export default function DashboardPage() {
           .from('orders')
           .select('id, total_amount')
           .gte('created_at', weekAgoISO),
+        // GMV: only paid orders (PAID, SHIPPED, DELIVERED, COMPLETED)
+        externalSupabase
+          .from('orders')
+          .select('id, total_amount')
+          .gte('created_at', todayISO)
+          .in('status', ['paid', 'shipped', 'delivered', 'completed', 'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED']),
+        externalSupabase
+          .from('orders')
+          .select('id, total_amount')
+          .gte('created_at', weekAgoISO)
+          .in('status', ['paid', 'shipped', 'delivered', 'completed', 'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED']),
         externalSupabase
           .from('products')
           .select('id', { count: 'exact', head: true })
