@@ -21,6 +21,7 @@ import {
   BookOpen,
   Banknote,
   ShoppingBag,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -91,6 +92,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { to: '/checkout/orders', icon: ShoppingBag, label: 'Checkout Orders' },
     { to: '/checkout/ledger', icon: BookOpen, label: 'Checkout Ledger' },
     { to: '/checkout/payouts', icon: Banknote, label: 'Checkout Payouts' },
+    { to: '/checkout/withdrawals', icon: ArrowDownToLine, label: 'Withdrawals' },
+    { to: '/checkout/wallets', icon: CreditCard, label: 'Wallets' },
   ];
 
   if (isSuperAdmin) {

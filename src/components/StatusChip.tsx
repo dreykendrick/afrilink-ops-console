@@ -35,6 +35,8 @@ const statusConfig: Record<string, { label: string; variant: string }> = {
   COMPLETED: { label: 'Completed', variant: 'completed' },
   REFUNDED: { label: 'Refunded', variant: 'cancelled' },
   DISPUTED: { label: 'Disputed', variant: 'open' },
+  PROCESSING: { label: 'Processing', variant: 'processing' },
+  REJECTED: { label: 'Rejected', variant: 'rejected' },
   
   // Notification status
   sent: { label: 'Sent', variant: 'approved' },
