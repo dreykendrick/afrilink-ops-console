@@ -25,6 +25,8 @@ import CheckoutPaymentsPage from "./pages/CheckoutPaymentsPage";
 import CheckoutOrdersPage from "./pages/CheckoutOrdersPage";
 import CheckoutLedgerPage from "./pages/CheckoutLedgerPage";
 import CheckoutPayoutsPage from "./pages/CheckoutPayoutsPage";
+import CheckoutWithdrawalsPage from "./pages/CheckoutWithdrawalsPage";
+import CheckoutWalletsPage from "./pages/CheckoutWalletsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
