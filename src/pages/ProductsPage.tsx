@@ -137,11 +137,12 @@ export default function ProductsPage() {
     try {
       const beforeData = { status: selectedProduct.status };
       const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
+      const isAvailable = actionType === 'approve';
       
       // External products table only has 'status' column, no 'rejection_reason'
       const { error } = await externalSupabase
         .from('products')
-        .update({ status: newStatus })
+        .update({ status: newStatus, is_available: isAvailable })
         .eq('id', selectedProduct.id);
 
       if (error) throw error;
@@ -151,7 +152,7 @@ export default function ProductsPage() {
         entityType: 'product',
         entityId: selectedProduct.id,
         beforeData,
-        afterData: { status: newStatus },
+        afterData: { status: newStatus, is_available: isAvailable },
         reason,
       });
 
