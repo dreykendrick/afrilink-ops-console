@@ -120,11 +120,12 @@ export default function TakedownRequestsPage() {
     try {
       const beforeData = { status: selectedProduct.status };
       const newStatus = actionType === 'approve' ? 'taken_down' : 'approved';
+      const isAvailable = actionType !== 'approve';
       
       // Directly update the product status in the external database
       const { error } = await externalSupabase
         .from('products')
-        .update({ status: newStatus })
+        .update({ status: newStatus, is_available: isAvailable })
         .eq('id', selectedProduct.id);
 
       if (error) throw error;
@@ -135,7 +136,7 @@ export default function TakedownRequestsPage() {
         entityType: 'product',
         entityId: selectedProduct.id,
         beforeData,
-        afterData: { status: newStatus },
+        afterData: { status: newStatus, is_available: isAvailable },
         reason,
       });
 
