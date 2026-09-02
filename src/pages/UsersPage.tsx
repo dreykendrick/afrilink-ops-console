@@ -4,12 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusChip } from '@/components/StatusChip';
 import { EmptyState } from '@/components/EmptyState';
-import { LoadingState, TableSkeleton } from '@/components/LoadingState';
+import { TableSkeleton } from '@/components/LoadingState';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { maskPhone, formatRelativeDate } from '@/lib/utils';
-import { Search, Users, Filter, UserX, UserCheck, RefreshCw } from 'lucide-react';
+import { Search, Users, UserX, UserCheck, RefreshCw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -20,17 +20,34 @@ import {
 import { toast } from 'sonner';
 import type { User } from '@/lib/types';
 
+type UserRow = User & {
+  profile_id?: string | null;
+  auth_user_id?: string | null;
+};
+
+const normalizeRole = (role: unknown): 'buyer' | 'vendor' | 'affiliate' => {
+  const roleName = String(role || 'buyer').toLowerCase();
+  if (roleName === 'customer' || roleName === 'buyer') return 'buyer';
+  if (roleName === 'vendor') return 'vendor';
+  if (roleName === 'affiliate') return 'affiliate';
+  return 'buyer';
+};
+
+const normalizeStatus = (status: unknown): 'active' | 'suspended' => {
+  return String(status || 'ACTIVE').toUpperCase() === 'SUSPENDED' ? 'suspended' : 'active';
+};
+
 export default function UsersPage() {
   const { isSuperAdmin } = useAuth();
   const { createAuditLog } = useAuditLog();
   
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [actionType, setActionType] = useState<'suspend' | 'unsuspend' | 'reset_verification' | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -42,68 +59,36 @@ export default function UsersPage() {
     try {
       setIsLoading(true);
       
-      // Fetch user_roles which contains role assignments
       const { data: rolesData, error: rolesError } = await externalSupabase
         .from('user_roles')
-        .select('*')
+        .select('*, profile:profiles!user_roles_profile_id_fkey(*), role_info:roles(name)')
         .order('created_at', { ascending: false });
 
       if (rolesError) throw rolesError;
 
-      // Get unique user_ids to fetch profile data
-      const userIds = [...new Set((rolesData || []).map(r => r.user_id).filter(Boolean))];
-      
-      // Try to fetch user profile data from profiles table
-      let profilesMap: Record<string, Record<string, unknown>> = {};
-      if (userIds.length > 0) {
-        // Try 'profiles' table first (common pattern)
-        const { data: profilesData } = await externalSupabase
-          .from('profiles')
-          .select('*')
-          .in('id', userIds);
-        
-        if (profilesData && profilesData.length > 0) {
-          profilesMap = (profilesData || []).reduce((acc, p: Record<string, unknown>) => {
-            acc[p.id as string] = p;
-            return acc;
-          }, {} as Record<string, Record<string, unknown>>);
-        } else {
-          // Fallback: try user_id column instead of id
-          const { data: profilesDataAlt } = await externalSupabase
-            .from('profiles')
-            .select('*')
-            .in('user_id', userIds);
-          
-          if (profilesDataAlt) {
-            profilesMap = (profilesDataAlt || []).reduce((acc, p: Record<string, unknown>) => {
-              acc[p.user_id as string] = p;
-              return acc;
-            }, {} as Record<string, Record<string, unknown>>);
-          }
-        }
-      }
-      
-      // Map combined data to expected User format
       const mappedUsers = (rolesData || []).map((u: Record<string, unknown>) => {
-        const userId = u.user_id as string;
-        const profile = profilesMap[userId] || {};
+        const profile = ((u as any).profile || {}) as Record<string, unknown>;
+        const authUserId = (profile.auth_user_id || u.user_id || u.profile_id || profile.id) as string | null;
+        const roleName = (u as any).role_info?.name || u.role || u.user_role || 'buyer';
+        const phoneVerified = Boolean(profile.phone_verified || profile.verification_status === 'verified');
         
         return {
           id: u.id as string,
-          user_id: userId,
-          // Get user details from profile, fallback to role record
+          profile_id: (u.profile_id || profile.id || null) as string | null,
+          auth_user_id: authUserId,
+          user_id: authUserId || '',
           phone: (profile.phone || profile.phone_number || u.phone || u.phone_number || null) as string | null,
           email: (profile.email || profile.email_address || u.email || u.email_address || null) as string | null,
           full_name: (profile.full_name || profile.name || profile.display_name || u.full_name || u.name || null) as string | null,
-          role: (u.role || u.user_role || 'buyer') as 'buyer' | 'vendor' | 'affiliate',
-          verification_status: (profile.verification_status || u.verification_status || (profile.is_verified ? 'verified' : 'unverified') || 'unverified') as string,
-          account_status: (profile.account_status || profile.status || u.account_status || 'active') as 'active' | 'suspended',
+          role: normalizeRole(roleName),
+          verification_status: (profile.verification_status || u.verification_status || (phoneVerified ? 'verified' : 'unverified')) as string,
+          account_status: normalizeStatus(profile.account_status || profile.status || u.account_status),
           city: (profile.city || profile.location || u.city || null) as string | null,
-          created_at: u.created_at as string || '',
+          created_at: (profile.created_at || u.created_at || '') as string,
           updated_at: (profile.updated_at || u.updated_at || '') as string,
           last_active_at: (profile.last_active_at || profile.last_login || u.last_active_at || null) as string | null,
         };
-      }) as User[];
+      }) as UserRow[];
       
       setUsers(mappedUsers);
     } catch (error) {
@@ -132,36 +117,46 @@ export default function UsersPage() {
     
     setIsActionLoading(true);
     try {
-      const beforeData = { account_status: selectedUser.account_status, verification_status: selectedUser.verification_status };
-      let updateData: Partial<User> = {};
+      const beforeData = {
+        account_status: selectedUser.account_status,
+        verification_status: selectedUser.verification_status,
+      };
+      let updateData: Record<string, unknown> = {};
       let auditAction = '';
 
       switch (actionType) {
         case 'suspend':
-          updateData = { account_status: 'suspended' as const };
+          updateData = { account_status: 'SUSPENDED' };
           auditAction = 'USER_SUSPENDED';
           break;
         case 'unsuspend':
-          updateData = { account_status: 'active' as const };
+          updateData = { account_status: 'ACTIVE' };
           auditAction = 'USER_UNSUSPENDED';
           break;
         case 'reset_verification':
-          updateData = { verification_status: 'unverified' };
+          updateData = { phone_verified: false };
           auditAction = 'USER_VERIFICATION_RESET';
           break;
       }
 
-      const { error } = await externalSupabase
-        .from('user_roles')
-        .update(updateData)
-        .eq('id', selectedUser.id);
+      const targetProfileId = selectedUser.profile_id;
+      const targetAuthUserId = selectedUser.auth_user_id || selectedUser.user_id;
+
+      if (!targetProfileId && !targetAuthUserId) {
+        throw new Error('Selected user is missing a profile identifier');
+      }
+
+      let query = externalSupabase.from('profiles').update(updateData);
+      const { error } = targetProfileId
+        ? await query.eq('id', targetProfileId)
+        : await query.eq('auth_user_id', targetAuthUserId);
 
       if (error) throw error;
 
       await createAuditLog({
         actionType: auditAction,
         entityType: 'user',
-        entityId: selectedUser.id,
+        entityId: targetAuthUserId || targetProfileId || selectedUser.id,
         beforeData,
         afterData: updateData,
         reason,
@@ -211,7 +206,6 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Users</h1>
@@ -223,7 +217,6 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="filter-bar">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -257,16 +250,15 @@ export default function UsersPage() {
         </Select>
       </div>
 
-      {/* Users Table */}
       {isLoading ? (
         <TableSkeleton rows={8} cols={6} />
       ) : filteredUsers.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No users found"
-          description={searchQuery || roleFilter !== 'all' || statusFilter !== 'all' 
-            ? "Try adjusting your filters" 
-            : "Users will appear here once they sign up"}
+          description={searchQuery || roleFilter !== 'all' || statusFilter !== 'all'
+            ? 'Try adjusting your filters'
+            : 'Users will appear here once they sign up'}
         />
       ) : (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -285,32 +277,18 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.profile_id || user.auth_user_id || user.id}>
                     <td>
                       <div>
-                        <p className="font-medium text-foreground">
-                          {user.full_name || 'No name'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {user.email || 'No email'}
-                        </p>
+                        <p className="font-medium text-foreground">{user.full_name || 'No name'}</p>
+                        <p className="text-sm text-muted-foreground">{user.email || 'No email'}</p>
                       </div>
                     </td>
-                    <td className="phone-masked text-muted-foreground">
-                      {maskPhone(user.phone)}
-                    </td>
-                    <td>
-                      <span className="capitalize text-foreground">{user.role}</span>
-                    </td>
-                    <td>
-                      <StatusChip status={user.verification_status} />
-                    </td>
-                    <td>
-                      <StatusChip status={user.account_status} />
-                    </td>
-                    <td className="text-muted-foreground">
-                      {formatRelativeDate(user.created_at)}
-                    </td>
+                    <td className="phone-masked text-muted-foreground">{maskPhone(user.phone)}</td>
+                    <td><span className="capitalize text-foreground">{user.role}</span></td>
+                    <td><StatusChip status={user.verification_status} /></td>
+                    <td><StatusChip status={user.account_status} /></td>
+                    <td className="text-muted-foreground">{formatRelativeDate(user.created_at)}</td>
                     <td>
                       <div className="flex items-center gap-2">
                         {user.account_status === 'active' ? (
@@ -355,7 +333,6 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Confirmation Dialog */}
       <ConfirmDialog
         open={!!selectedUser && !!actionType}
         onOpenChange={(open) => {
