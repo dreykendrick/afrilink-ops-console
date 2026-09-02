@@ -10,7 +10,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const EXTERNAL_SUPABASE_URL = 'https://dqclmqbegnimtbkndrif.supabase.co';
-const EXTERNAL_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxY2xtcWJlZ25pbXRia25kcmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NjE4NzMsImV4cCI6MjEwMTUzNzg3M30.pemKTzkeYqSOtiVGwCWx5uzXyITJLnCCVVBacPGvalo';
+const EXTERNAL_SUPABASE_ANON_KEY = 'sb_publishable_Hs6rGbT_zklxTMuLkrNZlw_OD-T2D8T';
 
 // Create a client for the external (main AfriLink) backend
 export const externalSupabase = createClient(
