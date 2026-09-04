@@ -25,6 +25,13 @@ import {
 import { toast } from 'sonner';
 import type { Vendor } from '@/lib/types';
 
+const normalizeVerificationStatus = (status: unknown): 'pending' | 'verified' | 'rejected' => {
+  const value = String(status || 'pending').toLowerCase();
+  if (value === 'approved' || value === 'verified' || value === 'active') return 'verified';
+  if (value === 'rejected' || value === 'suspended') return 'rejected';
+  return 'pending';
+};
+
 export default function VendorsPage() {
   const { createAuditLog } = useAuditLog();
   
@@ -45,7 +52,6 @@ export default function VendorsPage() {
   const fetchVendors = async () => {
     try {
       setIsLoading(true);
-      // External AfriLink database uses 'vendor_profiles' table with different column names
       const { data, error } = await externalSupabase
         .from('vendor_profiles')
         .select('*')
@@ -53,25 +59,24 @@ export default function VendorsPage() {
 
       if (error) throw error;
       
-      // Map external schema to expected Vendor format
-      // Note: vendor_profiles only has verification_status, we derive account_status from it
       const mappedVendors = (data || []).map((v: Record<string, unknown>) => {
-        const verificationStatus = (v.verification_status || 'pending') as string;
-        // Derive account_status from verification_status since the external DB doesn't have account_status
+        const rawVerificationStatus = String(v.verification_status || 'pending').toLowerCase();
+        const verificationStatus = normalizeVerificationStatus(rawVerificationStatus);
         let accountStatus: 'pending' | 'active' | 'suspended' = 'pending';
-        if (verificationStatus === 'verified' || verificationStatus === 'approved') {
+        if (rawVerificationStatus === 'approved' || rawVerificationStatus === 'verified' || rawVerificationStatus === 'active') {
           accountStatus = 'active';
-        } else if (verificationStatus === 'rejected' || verificationStatus === 'suspended') {
+        } else if (rawVerificationStatus === 'rejected' || rawVerificationStatus === 'suspended') {
           accountStatus = 'suspended';
         }
+        const userId = (v.user_id || v.id || '') as string;
         
         return {
-          id: v.id as string,
-          user_id: v.user_id as string || '',
+          id: userId,
+          user_id: userId,
           business_name: (v.business_name || v.name || v.shop_name || v.store_name || 'Unknown Vendor') as string,
           city: v.city as string || v.location as string || null,
           phone: v.phone as string || v.phone_number as string || null,
-          verification_status: verificationStatus as 'pending' | 'verified' | 'rejected',
+          verification_status: verificationStatus,
           account_status: accountStatus,
           total_orders: v.total_orders as number || 0,
           total_revenue: v.total_revenue as number || 0,
@@ -112,11 +117,9 @@ export default function VendorsPage() {
       let updateData: Record<string, string> = {};
       let auditAction = '';
 
-      // The external database only has verification_status column
-      // We update verification_status to reflect the desired state
       switch (actionType) {
         case 'approve':
-          updateData = { verification_status: 'verified' };
+          updateData = { verification_status: 'approved' };
           auditAction = 'VENDOR_APPROVED';
           break;
         case 'reject':
@@ -128,22 +131,27 @@ export default function VendorsPage() {
           auditAction = 'VENDOR_SUSPENDED';
           break;
         case 'unsuspend':
-          updateData = { verification_status: 'verified' };
+          updateData = { verification_status: 'approved' };
           auditAction = 'VENDOR_UNSUSPENDED';
           break;
+      }
+
+      const vendorUserId = selectedVendor.user_id || selectedVendor.id;
+      if (!vendorUserId) {
+        throw new Error('Selected vendor is missing user_id');
       }
 
       const { error } = await externalSupabase
         .from('vendor_profiles')
         .update(updateData)
-        .eq('id', selectedVendor.id);
+        .eq('user_id', vendorUserId);
 
       if (error) throw error;
 
       await createAuditLog({
         actionType: auditAction,
         entityType: 'vendor',
-        entityId: selectedVendor.id,
+        entityId: vendorUserId,
         beforeData,
         afterData: updateData,
         reason,
@@ -204,7 +212,6 @@ export default function VendorsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Vendors</h1>
@@ -216,7 +223,6 @@ export default function VendorsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="filter-bar">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -240,16 +246,15 @@ export default function VendorsPage() {
         </Select>
       </div>
 
-      {/* Vendors Table */}
       {isLoading ? (
         <TableSkeleton rows={8} cols={7} />
       ) : filteredVendors.length === 0 ? (
         <EmptyState
           icon={Store}
           title="No vendors found"
-          description={searchQuery || statusFilter !== 'all' 
-            ? "Try adjusting your filters" 
-            : "Vendors will appear here once they register"}
+          description={searchQuery || statusFilter !== 'all'
+            ? 'Try adjusting your filters'
+            : 'Vendors will appear here once they register'}
         />
       ) : (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -268,7 +273,7 @@ export default function VendorsPage() {
               </thead>
               <tbody>
                 {filteredVendors.map((vendor) => (
-                  <tr key={vendor.id}>
+                  <tr key={vendor.user_id || vendor.id}>
                     <td>
                       <p className="font-medium text-foreground">{vendor.business_name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -354,7 +359,6 @@ export default function VendorsPage() {
         </div>
       )}
 
-      {/* Vendor Detail Dialog */}
       <Dialog open={!!viewVendor} onOpenChange={(open) => !open && setViewVendor(null)}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
@@ -397,7 +401,6 @@ export default function VendorsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog */}
       <ConfirmDialog
         open={!!selectedVendor && !!actionType}
         onOpenChange={(open) => {
